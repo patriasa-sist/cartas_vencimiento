@@ -1,15 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	// Mover serverComponentsExternalPackages a la nueva ubicación
+	// Configuración para ExcelJS en server components
 	serverExternalPackages: ["exceljs"],
+
+	// Configuración de webpack como fallback
 	webpack: (config) => {
 		config.resolve.alias.canvas = false;
 		config.resolve.alias.encoding = false;
 		return config;
 	},
+
+	// Configuración de imágenes
 	images: {
 		domains: [],
 	},
+
+	// Headers de seguridad
 	async headers() {
 		return [
 			{
