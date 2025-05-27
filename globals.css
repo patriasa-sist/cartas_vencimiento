@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 215 100% 14%; /* Patria Blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 142 76% 36%; /* Patria Green */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 215 100% 14%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Patria corporate styling */
+.patria-gradient {
+  background: linear-gradient(135deg, #172554 0%, #1e40af 100%);
+}
+
+.patria-card {
+  @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow;
+}
+
+.patria-text-primary {
+  @apply text-patria-blue;
+}
+
+.patria-text-accent {
+  @apply text-patria-green;
+}
+
+.patria-btn-primary {
+  @apply bg-patria-blue hover:bg-primary-800 text-white font-medium py-2 px-4 rounded-md transition-colors;
+}
+
+.patria-btn-accent {
+  @apply bg-patria-green hover:bg-accent-700 text-white font-medium py-2 px-4 rounded-md transition-colors;
+}
+
+/* Animations for loading states */
+@keyframes pulse-custom {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-custom {
+  animation: pulse-custom 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Excel upload area styling */
+.upload-area {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-patria-blue transition-colors;
+}
+
+.upload-area.dragover {
+  @apply border-patria-blue bg-blue-50;
+}
+
+/* Table styling */
+.data-table {
+  @apply w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm;
+}
+
+.data-table th {
+  @apply bg-patria-blue text-white p-3 text-left font-medium;
+}
+
+.data-table td {
+  @apply p-3 border-b border-gray-200;
+}
+
+.data-table tr:hover {
+  @apply bg-gray-50;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.status-badge.pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-badge.critical {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-badge.sent {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-badge.expired {
+  @apply bg-gray-100 text-gray-800;
+}
