@@ -140,17 +140,17 @@ export function mapExcelRowToRecord(row: any): InsuranceRecord {
 	return {
 		nro: parseNumber(row["NRO."]),
 		finDeVigencia: row["FIN DE VIGENCIA"],
-		compania: cleanString(row["COMPAÑÍA"]),
-		ramo: cleanString(row["RAMO"]),
-		noPoliza: cleanString(row["NO. PÓLIZA"]),
+		compania: cleanString(row["COMPAÑÍA"]) || "Sin especificar",
+		ramo: cleanString(row["RAMO"]) || "Sin especificar",
+		noPoliza: cleanString(row["NO. PÓLIZA"]) || "Sin número",
 		telefono: cleanString(row["TELEFONO"]),
 		correoODireccion: cleanString(row["CORREO/DIRECCION"]),
-		asegurado: cleanString(row["ASEGURADO"]),
+		asegurado: cleanString(row["ASEGURADO"]) || "Sin nombre",
 		cartera: cleanString(row["CARTERA"]),
 		materiaAsegurada: cleanString(row["MATERIA ASEGURADA"]),
 		valorAsegurado: parseNumber(row[" VALOR ASEGURADO "] || row["VALOR ASEGURADO"]),
 		prima: parseNumber(row[" PRIMA "] || row["PRIMA"]),
-		ejecutivo: cleanString(row["EJECUTIVO"]),
+		ejecutivo: cleanString(row["EJECUTIVO"]) || "Sin asignar",
 		responsable: cleanString(row["RESPONSABLE"]),
 		cartaAvisoVto: cleanString(row["CARTA AVISO VTO."]),
 		seguimiento: cleanString(row["SEGUIMIENTO"]),
@@ -172,6 +172,8 @@ export function processRecord(record: InsuranceRecord, index: number): Processed
 	let expiryDate: Date;
 	if (typeof record.finDeVigencia === "number") {
 		expiryDate = excelDateToJSDate(record.finDeVigencia);
+	} else if (record.finDeVigencia instanceof Date) {
+		expiryDate = record.finDeVigencia;
 	} else {
 		expiryDate = new Date(record.finDeVigencia);
 	}
@@ -389,7 +391,10 @@ export function getUniqueValues<T extends keyof ProcessedInsuranceRecord>(
 ): string[] {
 	const values = records
 		.map((record) => record[property])
-		.filter((value): value is string => typeof value === "string" && value.trim() !== "")
+		.filter(
+			(value): value is string =>
+				typeof value === "string" && value.trim() !== "" && value !== null && value !== undefined
+		)
 		.map((value) => value.trim());
 
 	return [...new Set(values)].sort();

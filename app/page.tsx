@@ -5,16 +5,20 @@ import { FileSpreadsheet, BarChart3, Mail, Users, AlertTriangle } from 'lucide-r
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import FileUpload from '@/components/FileUpload';
+import Dashboard from '@/components/Dashboard';
+import CriticalAlerts from '@/components/CriticalAlerts';
 import { ProcessedInsuranceRecord } from '@/types/insurance';
+
+type ViewState = 'upload' | 'dashboard' | 'critical-alerts';
 
 export default function HomePage() {
   const [insuranceData, setInsuranceData] = useState<ProcessedInsuranceRecord[]>([]);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'dashboard'>('upload');
+  const [currentView, setCurrentView] = useState<ViewState>('upload');
   const [error, setError] = useState<string>('');
 
   const handleDataLoaded = (data: ProcessedInsuranceRecord[]) => {
     setInsuranceData(data);
-    setCurrentStep('dashboard');
+    setCurrentView('dashboard');
     setError('');
   };
 
@@ -23,12 +27,20 @@ export default function HomePage() {
   };
 
   const resetToUpload = () => {
-    setCurrentStep('upload');
+    setCurrentView('upload');
     setInsuranceData([]);
     setError('');
   };
 
-  // Calcular estadísticas rápidas
+  const goToCriticalAlerts = () => {
+    setCurrentView('critical-alerts');
+  };
+
+  const goToDashboard = () => {
+    setCurrentView('dashboard');
+  };
+
+  // Calcular estadísticas rápidas para la vista de resumen
   const stats = React.useMemo(() => {
     if (insuranceData.length === 0) return null;
 
@@ -42,38 +54,18 @@ export default function HomePage() {
     return { total, critical, dueSoon, pending, expired, totalValue };
   }, [insuranceData]);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="patria-gradient shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-patria-blue font-bold text-xl">P</span>
-              </div>
-              <div>
-                <h1 className="text-white text-xl font-bold">PATRIA S.A.</h1>
-                <p className="text-blue-100 text-sm">Sistema de Cartas de Vencimiento</p>
-              </div>
-            </div>
-            
-            {currentStep === 'dashboard' && (
-              <Button
-                variant="ghost"
-                onClick={resetToUpload}
-                className="text-white hover:bg-white/10"
-              >
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Nuevo Archivo
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentStep === 'upload' ? (
+  // Renderizar vista actual
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return <Dashboard data={insuranceData} onBack={resetToUpload} />;
+      
+      case 'critical-alerts':
+        return <CriticalAlerts data={insuranceData} onBack={goToDashboard} />;
+      
+      case 'upload':
+      default:
+        return (
           <div className="space-y-8">
             {/* Título de bienvenida */}
             <div className="text-center">
@@ -182,143 +174,67 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </div>
-        ) : (
-          /* Dashboard view */
-          <div className="space-y-6">
-            {/* Stats cards */}
-            {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <Card className="patria-card">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-                    <div className="text-sm text-gray-600">Total Registros</div>
-                  </CardContent>
-                </Card>
+        );
+    }
+  };
 
-                <Card className="patria-card border-red-200">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-red-600">{stats.critical}</div>
-                    <div className="text-sm text-gray-600">Críticos (≤5 días)</div>
-                  </CardContent>
-                </Card>
-
-                <Card className="patria-card border-yellow-200">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-yellow-600">{stats.dueSoon}</div>
-                    <div className="text-sm text-gray-600">Próximos (6-30 días)</div>
-                  </CardContent>
-                </Card>
-
-                <Card className="patria-card border-blue-200">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-600">{stats.pending}</div>
-                    <div className="text-sm text-gray-600">Pendientes (+30 días)</div>
-                  </CardContent>
-                </Card>
-
-                <Card className="patria-card border-gray-200">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-gray-600">{stats.expired}</div>
-                    <div className="text-sm text-gray-600">Vencidos</div>
-                  </CardContent>
-                </Card>
-
-                <Card className="patria-card border-green-200">
-                  <CardContent className="p-4 text-center">
-                    <div className="text-lg font-bold text-green-600">
-                      {new Intl.NumberFormat('es-BO', {
-                        style: 'currency',
-                        currency: 'BOB',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      }).format(stats.totalValue)}
-                    </div>
-                    <div className="text-sm text-gray-600">Valor Total</div>
-                  </CardContent>
-                </Card>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="patria-gradient shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                <span className="text-patria-blue font-bold text-xl">P</span>
+              </div>
+              <div>
+                <h1 className="text-white text-xl font-bold">PATRIA S.A.</h1>
+                <p className="text-blue-100 text-sm">Sistema de Cartas de Vencimiento</p>
+              </div>
+            </div>
+            
+            {/* Navegación del header */}
+            {currentView !== 'upload' && (
+              <div className="flex items-center space-x-3">
+                {stats && stats.critical > 0 && currentView !== 'critical-alerts' && (
+                  <Button
+                    variant="ghost"
+                    onClick={goToCriticalAlerts}
+                    className="text-white hover:bg-white/10 border border-red-300"
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    {stats.critical} Críticos
+                  </Button>
+                )}
+                
+                {currentView !== 'dashboard' && (
+                  <Button
+                    variant="ghost"
+                    onClick={goToDashboard}
+                    className="text-white hover:bg-white/10"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Button>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  onClick={resetToUpload}
+                  className="text-white hover:bg-white/10"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Nuevo Archivo
+                </Button>
               </div>
             )}
-
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-4">
-              <Button className="patria-btn-primary">
-                <Mail className="h-4 w-4 mr-2" />
-                Generar Cartas
-              </Button>
-              <Button variant="outline">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Ver Dashboard Completo
-              </Button>
-              <Button variant="outline">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Alertas Críticas ({stats?.critical || 0})
-              </Button>
-            </div>
-
-            {/* Quick preview table */}
-            <Card className="patria-card">
-              <CardHeader>
-                <CardTitle>Vista Previa de Datos</CardTitle>
-                <CardDescription>
-                  Mostrando los primeros 10 registros. Haz clic en "Ver Dashboard Completo" para ver todas las opciones.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Asegurado</th>
-                        <th>Compañía</th>
-                        <th>No. Póliza</th>
-                        <th>Vencimiento</th>
-                        <th>Días Restantes</th>
-                        <th>Estado</th>
-                        <th>Ejecutivo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {insuranceData.slice(0, 10).map((record, index) => (
-                        <tr key={record.id || index}>
-                          <td className="font-medium">{record.asegurado}</td>
-                          <td>{record.compania}</td>
-                          <td className="font-mono text-sm">{record.noPoliza}</td>
-                          <td>{new Date(record.finDeVigencia).toLocaleDateString('es-BO')}</td>
-                          <td className={`font-medium ${
-                            record.daysUntilExpiry <= 5 ? 'text-red-600' : 
-                            record.daysUntilExpiry <= 30 ? 'text-yellow-600' : 'text-gray-600'
-                          }`}>
-                            {record.daysUntilExpiry} días
-                          </td>
-                          <td>
-                            <span className={`status-badge ${record.status}`}>
-                              {record.status === 'critical' ? 'Crítico' :
-                               record.status === 'due_soon' ? 'Próximo' :
-                               record.status === 'pending' ? 'Pendiente' :
-                               record.status === 'expired' ? 'Vencido' : 'Enviado'}
-                            </span>
-                          </td>
-                          <td>{record.ejecutivo}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {insuranceData.length > 10 && (
-                  <div className="mt-4 text-center">
-                    <p className="text-sm text-gray-600">
-                      Mostrando 10 de {insuranceData.length} registros
-                    </p>
-                    <Button variant="outline" className="mt-2">
-                      Ver Todos los Registros
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
-        )}
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderCurrentView()}
       </main>
     </div>
   );
