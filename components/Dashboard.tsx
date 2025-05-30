@@ -219,12 +219,34 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 	};
 
 	const handleSelectAll = () => {
-		if (selectedRecords.size === currentPageData.length) {
+		const allRecordIds = new Set(filteredData.map((r) => r.id!));
+		if (selectedRecords.size === filteredData.length) {
+			// Si todos están seleccionados, deseleccionar todos
 			setSelectedRecords(new Set());
 		} else {
-			setSelectedRecords(new Set(currentPageData.map((r) => r.id!)));
+			// Si no todos están seleccionados, seleccionar todos
+			setSelectedRecords(allRecordIds);
 		}
 	};
+
+	const handleSelectPage = () => {
+		const currentPageIds = currentPageData.map((r) => r.id!);
+		const allPageSelected = currentPageIds.every((id) => selectedRecords.has(id));
+
+		const newSelected = new Set(selectedRecords);
+		if (allPageSelected) {
+			// Deseleccionar toda la página actual
+			currentPageIds.forEach((id) => newSelected.delete(id));
+		} else {
+			// Seleccionar toda la página actual
+			currentPageIds.forEach((id) => newSelected.add(id));
+		}
+		setSelectedRecords(newSelected);
+	};
+
+	// Verificar estados de selección
+	const isAllSelected = selectedRecords.size === filteredData.length && filteredData.length > 0;
+	const isPageSelected = currentPageData.length > 0 && currentPageData.every((r) => selectedRecords.has(r.id!));
 
 	// Seleccionar solo registros críticos
 	const handleSelectCritical = () => {
@@ -556,7 +578,7 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 								checked={selectedRecords.size === currentPageData.length && currentPageData.length > 0}
 								onCheckedChange={handleSelectAll}
 							/>
-							<span className="text-sm text-gray-600">Seleccionar página</span>
+							<span className="text-sm text-gray-600">Seleccionar Todo</span>
 						</div>
 					</div>
 				</CardHeader>
@@ -567,13 +589,7 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 								<tr className="border-b border-gray-200">
 									<th className="text-left p-3 font-medium text-gray-900">
 										<div className="flex items-center space-x-2">
-											<Checkbox
-												checked={
-													selectedRecords.size === currentPageData.length &&
-													currentPageData.length > 0
-												}
-												onCheckedChange={handleSelectAll}
-											/>
+											<Checkbox checked={isPageSelected} onCheckedChange={handleSelectPage} />
 										</div>
 									</th>
 
