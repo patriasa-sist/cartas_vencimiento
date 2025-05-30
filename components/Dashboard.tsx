@@ -1,3 +1,5 @@
+// components/Dashboard.tsx - Updated with PDF Generation Integration
+
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
@@ -19,6 +21,8 @@ import {
 	Eye,
 	CheckSquare,
 	Square,
+	Package,
+	Zap,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
 	ProcessedInsuranceRecord,
 	FilterOptions,
@@ -34,6 +39,8 @@ import {
 	InsuranceStatus,
 } from "@/types/insurance";
 import { formatCurrency, formatDate, getUniqueValues } from "@/utils/excel";
+import LetterGenerator from "@/components/PDFGeneration/LetterGenerator";
+import { PDFGenerationResult } from "@/types/pdf";
 
 interface DashboardProps {
 	data: ProcessedInsuranceRecord[];
@@ -59,6 +66,10 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 	const [selectedRamo, setSelectedRamo] = useState<string>("all-ramos");
 	const [selectedStatus, setSelectedStatus] = useState<InsuranceStatus[]>([]);
 	const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+
+	// Estados para generación de PDFs
+	const [showLetterGenerator, setShowLetterGenerator] = useState(false);
+	const [pdfGenerationResult, setPdfGenerationResult] = useState<PDFGenerationResult | null>(null);
 
 	// Valores únicos para filtros - con filtrado más estricto
 	const uniqueValues = useMemo(() => {
@@ -94,6 +105,11 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 			averagePremium,
 		};
 	}, [filteredData]);
+
+	// Obtener registros seleccionados
+	const getSelectedRecords = (): ProcessedInsuranceRecord[] => {
+		return filteredData.filter((record) => selectedRecords.has(record.id!));
+	};
 
 	// Aplicar filtros
 	const applyFilters = useCallback(() => {
@@ -210,6 +226,12 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		}
 	};
 
+	// Seleccionar solo registros críticos
+	const handleSelectCritical = () => {
+		const criticalRecords = filteredData.filter((r) => r.status === "critical" || r.status === "due_soon");
+		setSelectedRecords(new Set(criticalRecords.map((r) => r.id!)));
+	};
+
 	// Manejo de ordenamiento
 	const handleSort = (field: keyof ProcessedInsuranceRecord) => {
 		setSortOptions((prev) => ({
@@ -226,6 +248,21 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		setSelectedRamo("all-ramos");
 		setSelectedStatus([]);
 		setDateRange({});
+	};
+
+	// Manejo del generador de cartas
+	const handleOpenLetterGenerator = () => {
+		if (selectedRecords.size === 0) {
+			alert("Por favor selecciona al menos un registro para generar cartas.");
+			return;
+		}
+		setShowLetterGenerator(true);
+	};
+
+	const handlePDFGenerated = (result: PDFGenerationResult) => {
+		setPdfGenerationResult(result);
+		// Opcional: limpiar selección después de generar
+		setSelectedRecords(new Set());
 	};
 
 	// Obtener badge de status
@@ -253,6 +290,17 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		);
 	};
 
+	// Si se está mostrando el generador de cartas
+	if (showLetterGenerator) {
+		return (
+			<LetterGenerator
+				selectedRecords={getSelectedRecords()}
+				onClose={() => setShowLetterGenerator(false)}
+				onGenerated={handlePDFGenerated}
+			/>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
 			{/* Header con estadísticas */}
@@ -271,16 +319,56 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</div>
 
 				<div className="flex space-x-2">
-					<Button variant="outline" disabled={selectedRecords.size === 0}>
-						<Mail className="h-4 w-4 mr-2" />
+					<Button variant="outline" onClick={handleSelectCritical} className="text-red-600 border-red-300">
+						<Zap className="h-4 w-4 mr-2" />
+						Seleccionar Críticos ({stats.critical + stats.dueSoon})
+					</Button>
+
+					<Button
+						onClick={handleOpenLetterGenerator}
+						disabled={selectedRecords.size === 0}
+						className="patria-btn-primary"
+					>
+						<FileText className="h-4 w-4 mr-2" />
 						Generar Cartas ({selectedRecords.size})
 					</Button>
+
 					<Button variant="outline">
 						<Download className="h-4 w-4 mr-2" />
 						Exportar
 					</Button>
 				</div>
 			</div>
+
+			{/* Resultado de generación de PDFs */}
+			{pdfGenerationResult && (
+				<Alert
+					className={
+						pdfGenerationResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
+					}
+				>
+					<Package className="h-4 w-4" />
+					<AlertDescription>
+						{pdfGenerationResult.success ? (
+							<div className="text-green-800">
+								<div className="font-medium">
+									✅ {pdfGenerationResult.totalGenerated} cartas generadas exitosamente
+								</div>
+								{pdfGenerationResult.errors.length > 0 && (
+									<div className="text-sm mt-1">
+										{pdfGenerationResult.errors.length} errores encontrados
+									</div>
+								)}
+							</div>
+						) : (
+							<div className="text-red-800">
+								<div className="font-medium">❌ Error en la generación de cartas</div>
+								<div className="text-sm mt-1">{pdfGenerationResult.errors.join(", ")}</div>
+							</div>
+						)}
+					</AlertDescription>
+				</Alert>
+			)}
 
 			{/* Tarjetas de estadísticas */}
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -646,7 +734,14 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 												<Button variant="ghost" size="sm">
 													<Eye className="h-4 w-4" />
 												</Button>
-												<Button variant="ghost" size="sm">
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() => {
+														setSelectedRecords(new Set([record.id!]));
+														handleOpenLetterGenerator();
+													}}
+												>
 													<Mail className="h-4 w-4" />
 												</Button>
 											</div>
