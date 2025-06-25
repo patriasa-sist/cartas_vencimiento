@@ -1,7 +1,7 @@
-// components/PDFGeneration/LetterGenerator.tsx
+// components/PDFGeneration/LetterGenerator.tsx - CORREGIDO
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		});
 
 		const groupedLetters = groupRecordsForLetters(validRecords);
-		setLetters(groupedLetters);
-
 		return {
 			letters: groupedLetters,
 			validRecords: validRecords.length,
@@ -59,6 +57,13 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			validationErrors,
 		};
 	}, [selectedRecords]);
+
+	// Inicializar cartas una sola vez
+	useEffect(() => {
+		if (preparedLetters.letters.length > 0 && letters.length === 0) {
+			setLetters(preparedLetters.letters);
+		}
+	}, [preparedLetters.letters, letters.length]);
 
 	// Estadísticas
 	const stats = useMemo(() => {
@@ -76,16 +81,72 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		};
 	}, [letters]);
 
-	// Actualizar datos de una carta
+	// CORREGIDO: Actualizar datos de una carta - función mejorada
 	const updateLetterData = (letterId: string, updates: Partial<LetterData>) => {
-		setLetters((prev) => prev.map((letter) => (letter.id === letterId ? { ...letter, ...updates } : letter)));
+		setLetters((prev) => {
+			const updated = prev.map((letter) => {
+				if (letter.id === letterId) {
+					const updatedLetter = { ...letter, ...updates };
+					// Recalcular needsReview y missingData después de actualizar
+					updatedLetter.needsReview = calculateNeedsReview(updatedLetter);
+					updatedLetter.missingData = calculateMissingData(updatedLetter);
+					return updatedLetter;
+				}
+				return letter;
+			});
+			return updated;
+		});
+	};
+
+	// NUEVO: Función para calcular si necesita revisión
+	const calculateNeedsReview = (letter: LetterData): boolean => {
+		return letter.policies.some((policy) => {
+			if (letter.templateType === "salud") {
+				return !policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0;
+			}
+			if (letter.templateType === "general") {
+				return (
+					!policy.manualFields?.deductibles ||
+					!policy.manualFields?.territoriality ||
+					!policy.manualFields?.specificConditions
+				);
+			}
+			return false;
+		});
+	};
+
+	// NUEVO: Función para calcular datos faltantes dinámicamente
+	const calculateMissingData = (letter: LetterData): string[] => {
+		const missing: string[] = [];
+
+		letter.policies.forEach((policy, index) => {
+			const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
+
+			if (letter.templateType === "salud") {
+				if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
+					missing.push(`${policyLabel}: Prima de renovación anual`);
+				}
+			}
+
+			if (letter.templateType === "general") {
+				if (!policy.manualFields?.deductibles) {
+					missing.push(`${policyLabel}: Información de deducibles`);
+				}
+				if (!policy.manualFields?.territoriality) {
+					missing.push(`${policyLabel}: Información de extraterritorialidad`);
+				}
+				if (!policy.manualFields?.specificConditions) {
+					missing.push(`${policyLabel}: Condiciones específicas`);
+				}
+			}
+		});
+
+		return missing;
 	};
 
 	// Generar PDF para una carta específica
 	const generateSinglePDF = async (letterData: LetterData): Promise<Blob> => {
 		const TemplateComponent = letterData.templateType === "salud" ? HealthTemplate : GeneralTemplate;
-
-		// Crear el elemento directamente sin React.createElement
 		const pdfBlob = await pdf(<TemplateComponent letterData={letterData} />).toBlob();
 		return pdfBlob;
 	};
@@ -296,6 +357,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						onCancelEdit={() => setEditingLetter(null)}
 						onPreview={() => handlePreview(letter.id)}
 						onDownload={() => handleDownloadSingle(letter.id)}
+						onUpdateLetterData={updateLetterData}
 					/>
 				))}
 			</div>
@@ -324,7 +386,93 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	);
 }
 
-// Componente para cada carta individual
+// NUEVO: Componente para input numérico validado
+interface NumericInputProps {
+	value: number | string;
+	onChange: (value: number) => void;
+	placeholder?: string;
+	className?: string;
+	label?: string;
+}
+
+function NumericInput({ value, onChange, placeholder, className, label }: NumericInputProps) {
+	const [displayValue, setDisplayValue] = useState(String(value || ""));
+
+	useEffect(() => {
+		setDisplayValue(String(value || ""));
+	}, [value]);
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const input = e.target.value;
+
+		// Permitir solo números y punto decimal
+		const numericValue = input.replace(/[^0-9.]/g, "");
+
+		// Evitar múltiples puntos decimales
+		const parts = numericValue.split(".");
+		const cleanValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : numericValue;
+
+		setDisplayValue(cleanValue);
+
+		// Convertir a número y llamar onChange
+		const numValue = parseFloat(cleanValue);
+		if (!isNaN(numValue) && numValue >= 0) {
+			onChange(numValue);
+		} else if (cleanValue === "" || cleanValue === ".") {
+			onChange(0);
+		}
+	};
+
+	const handleBlur = () => {
+		// Formatear el valor cuando se pierde el foco
+		const numValue = parseFloat(displayValue);
+		if (!isNaN(numValue)) {
+			setDisplayValue(numValue.toString());
+		} else {
+			setDisplayValue("");
+			onChange(0);
+		}
+	};
+
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<Input
+				type="text"
+				value={displayValue}
+				onChange={handleChange}
+				onBlur={handleBlur}
+				placeholder={placeholder}
+				className={className}
+			/>
+		</div>
+	);
+}
+
+// NUEVO: Componente para textarea de condiciones específicas
+interface ConditionsTextareaProps {
+	value: string;
+	onChange: (value: string) => void;
+	placeholder?: string;
+	label?: string;
+}
+
+function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsTextareaProps) {
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<textarea
+				value={value || ""}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={placeholder}
+				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-none h-16 focus:ring-2 focus:ring-patria-blue focus:border-transparent"
+				rows={3}
+			/>
+		</div>
+	);
+}
+
+// CORREGIDO: Componente para cada carta individual
 interface LetterCardProps {
 	letter: LetterData;
 	isEditing: boolean;
@@ -335,6 +483,7 @@ interface LetterCardProps {
 	onCancelEdit: () => void;
 	onPreview: () => void;
 	onDownload: () => void;
+	onUpdateLetterData: (letterId: string, updates: Partial<LetterData>) => void;
 }
 
 function LetterCard({
@@ -347,17 +496,25 @@ function LetterCard({
 	onCancelEdit,
 	onPreview,
 	onDownload,
+	onUpdateLetterData,
 }: LetterCardProps) {
+	// CORREGIDO: Estado local sincronizado con props
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
+
+	// NUEVO: Sincronizar estado local con props cuando cambie la carta
+	useEffect(() => {
+		setEditedLetter(letter);
+	}, [letter]);
 
 	const handleSave = () => {
 		onSaveEdit(editedLetter);
 	};
 
+	// CORREGIDO: Función para actualizar póliza individual con tipado correcto
 	const updatePolicy = (policyIndex: number, field: string, value: any) => {
-		setEditedLetter((prev) => ({
-			...prev,
-			policies: prev.policies.map((policy, index) =>
+		const updatedLetter = {
+			...editedLetter,
+			policies: editedLetter.policies.map((policy, index) =>
 				index === policyIndex
 					? {
 							...policy,
@@ -368,7 +525,12 @@ function LetterCard({
 					  }
 					: policy
 			),
-		}));
+		};
+
+		setEditedLetter(updatedLetter);
+
+		// NUEVO: Actualizar inmediatamente en el estado padre para feedback visual
+		onUpdateLetterData(letter.id, updatedLetter);
 	};
 
 	const getTemplateIcon = (type: "salud" | "general") => {
@@ -382,7 +544,7 @@ function LetterCard({
 	return (
 		<Card
 			className={`${getTemplateColor(letter.templateType)} ${
-				letter.needsReview ? "border-l-4 border-l-red-500" : ""
+				letter.needsReview ? "border-l-4 border-l-red-500" : "border-l-4 border-l-green-500"
 			}`}
 		>
 			<CardHeader>
@@ -403,6 +565,13 @@ function LetterCard({
 							<Badge variant="destructive" className="text-xs">
 								<AlertTriangle className="h-3 w-3 mr-1" />
 								Revisar
+							</Badge>
+						)}
+
+						{!letter.needsReview && (
+							<Badge variant="default" className="text-xs bg-green-600">
+								<CheckCircle className="h-3 w-3 mr-1" />
+								Completo
 							</Badge>
 						)}
 
@@ -470,7 +639,7 @@ function LetterCard({
 				<div className="space-y-3">
 					<h4 className="font-medium text-gray-900">Pólizas ({letter.policies.length})</h4>
 
-					{letter.policies.map((policy, index) => (
+					{editedLetter.policies.map((policy, index) => (
 						<div key={index} className="p-3 bg-white rounded border">
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
 								<div>
@@ -490,35 +659,26 @@ function LetterCard({
 									</div>
 								</div>
 
-								{/* Campos editables para datos faltantes */}
+								{/* CORREGIDO: Campos editables mejorados */}
 								<div className="space-y-2">
 									{isEditing && (
 										<>
 											{letter.templateType === "salud" && (
-												<div>
-													<label className="text-xs text-gray-600">
-														Prima renovación (USD):
-													</label>
-													<Input
-														type="number"
-														placeholder="0.00"
-														value={policy.manualFields?.renewalPremium || ""}
-														onChange={(e) =>
-															updatePolicy(
-																index,
-																"renewalPremium",
-																parseFloat(e.target.value) || 0
-															)
-														}
-														className="text-xs h-8"
-													/>
-												</div>
+												<NumericInput
+													label="Prima renovación (USD):"
+													value={policy.manualFields?.renewalPremium || 0}
+													onChange={(value) => updatePolicy(index, "renewalPremium", value)}
+													placeholder="0.00"
+													className="text-xs h-8"
+												/>
 											)}
 
 											{letter.templateType === "general" && (
 												<>
 													<div>
-														<label className="text-xs text-gray-600">Deducibles:</label>
+														<label className="text-xs text-gray-600 block mb-1">
+															Deducibles:
+														</label>
 														<Input
 															placeholder="10% mínimo Bs 1.000"
 															value={policy.manualFields?.deductibles || ""}
@@ -530,7 +690,7 @@ function LetterCard({
 													</div>
 
 													<div>
-														<label className="text-xs text-gray-600">
+														<label className="text-xs text-gray-600 block mb-1">
 															Extraterritorialidad:
 														</label>
 														<Input
@@ -542,25 +702,48 @@ function LetterCard({
 															className="text-xs h-8"
 														/>
 													</div>
+
+													{/* NUEVO: Campo para condiciones específicas */}
+													<ConditionsTextarea
+														label="Condiciones específicas:"
+														value={policy.manualFields?.specificConditions || ""}
+														onChange={(value) =>
+															updatePolicy(index, "specificConditions", value)
+														}
+														placeholder="Describa condiciones adicionales, coberturas especiales, etc."
+													/>
 												</>
 											)}
 										</>
 									)}
 
+									{/* CORREGIDO: Mostrar datos guardados con mejor formato */}
 									{!isEditing && policy.manualFields && (
-										<div className="text-xs text-green-700">
+										<div className="text-xs space-y-1">
 											{letter.templateType === "salud" && policy.manualFields.renewalPremium && (
-												<div>✓ Prima: {formatUSD(policy.manualFields.renewalPremium)}</div>
+												<div className="text-green-700 font-medium">
+													✓ Prima: {formatUSD(policy.manualFields.renewalPremium)}
+												</div>
 											)}
-											{letter.templateType === "general" && policy.manualFields.deductibles && (
-												<div>✓ Deducibles: {policy.manualFields.deductibles}</div>
+											{letter.templateType === "general" && (
+												<>
+													{policy.manualFields.deductibles && (
+														<div className="text-green-700 font-medium">
+															✓ Deducibles: {policy.manualFields.deductibles}
+														</div>
+													)}
+													{policy.manualFields.territoriality && (
+														<div className="text-green-700 font-medium">
+															✓ Extraterritorialidad: {policy.manualFields.territoriality}
+														</div>
+													)}
+													{policy.manualFields.specificConditions && (
+														<div className="text-green-700 font-medium">
+															✓ Condiciones: {policy.manualFields.specificConditions}
+														</div>
+													)}
+												</>
 											)}
-											{letter.templateType === "general" &&
-												policy.manualFields.territoriality && (
-													<div>
-														✓ Extraterritorialidad: {policy.manualFields.territoriality}
-													</div>
-												)}
 										</div>
 									)}
 								</div>
@@ -578,7 +761,7 @@ function LetterCard({
 					))}
 				</div>
 
-				{/* Datos faltantes */}
+				{/* CORREGIDO: Datos faltantes actualizados dinámicamente */}
 				{letter.missingData.length > 0 && (
 					<div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
 						<div className="flex items-center mb-2">
@@ -586,11 +769,23 @@ function LetterCard({
 							<span className="font-medium text-red-800">Datos faltantes a completar:</span>
 						</div>
 						<ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
-							{letter.missingData.slice(0, 3).map((item, index) => (
+							{letter.missingData.slice(0, 5).map((item, index) => (
 								<li key={index}>{item}</li>
 							))}
-							{letter.missingData.length > 3 && <li>... y {letter.missingData.length - 3} más</li>}
+							{letter.missingData.length > 5 && <li>... y {letter.missingData.length - 5} más</li>}
 						</ul>
+					</div>
+				)}
+
+				{/* NUEVO: Mensaje cuando todos los datos están completos */}
+				{!letter.needsReview && (
+					<div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+						<div className="flex items-center">
+							<CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+							<span className="font-medium text-green-800">
+								Todos los datos están completos. Lista para generar.
+							</span>
+						</div>
 					</div>
 				)}
 
@@ -602,3 +797,8 @@ function LetterCard({
 		</Card>
 	);
 }
+
+/**
+ * ya funciona mucho mejor, pero no agrega las condiciones como tal dentro del pdf generado,
+ * ademas falta hacer que siga el formato correcto para que sea exactamente igual al formato entregado por patria
+ */
