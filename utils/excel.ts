@@ -9,22 +9,35 @@ import {
 } from "@/types/insurance";
 
 /**
- * Convierte fecha serial de Excel a objeto Date usando ExcelJS
+ * Convierte fecha serial de Excel a objeto Date - CORREGIDO
  */
 export function excelDateToJSDate(excelDate: number | Date): Date {
-	if (excelDate instanceof Date) return excelDate;
-	if (typeof excelDate !== "number") return new Date(excelDate);
+	if (excelDate instanceof Date) {
+		let tiempoMili = excelDate.getTime();
+		let tiempoActual = new Date(1899, 11, 30).getTime();
+		// Si ya es Date pero viene de Excel, convertir a número para aplicar corrección
+		const excelSerial = (tiempoMili - tiempoActual) / (24 * 60 * 60 * 1000);
 
-	// ExcelJS maneja mejor las fechas que XLSX
-	const excelEpoch = new Date(1900, 0, 1);
-	const days = excelDate - 1;
-	const jsDate = new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000);
+		// logs de pruebas
+		// console.log("excelDate: ", excelDate);
+		// console.log("tiempoMili: ", tiempoMili);
+		// console.log("tiempoActual: ", tiempoActual);
+		// console.log("excelSerial: ", excelSerial);
 
-	if (excelDate > 59) {
-		jsDate.setTime(jsDate.getTime() - 24 * 60 * 60 * 1000);
+		return excelDateToJSDate(excelSerial);
 	}
 
-	return jsDate;
+	// console.log("numero procesado: ", excelDate);
+
+	// Corrección del bug de Excel: si la fecha serial es > 59 (después del 28 feb 1900), restar 1 día porque Excel incorrectamente cuenta el 29 feb 1900 que no existió
+	const correctedSerial = excelDate > 59 ? excelDate - 1 : excelDate;
+
+	const excelEpoch = new Date(1900, 0, 1); // Fecha base: 1 enero 1900 en Excel
+	const resultDate = new Date(excelEpoch); // inicializacion cualquiera
+	resultDate.setDate(excelEpoch.getDate() + correctedSerial); // Suma de dias
+
+	//console.log("fecha corregida: ", resultDate);
+	return resultDate;
 }
 
 /**
@@ -165,15 +178,29 @@ export function mapExcelRowToRecord(row: any): InsuranceRecord {
 }
 
 /**
- * Procesa un registro para agregar campos calculados
+ * Procesa un registro para agregar campos calculados - ACTUALIZADO
  */
 export function processRecord(record: InsuranceRecord, index: number): ProcessedInsuranceRecord {
 	// Convertir fecha si es necesario
 	let expiryDate: Date;
-	if (typeof record.finDeVigencia === "number") {
+	// si finDeVigencia es un number o Date convertir y resolver bug de año bisciesto
+	if (typeof record.finDeVigencia === "number" || record.finDeVigencia instanceof Date) {
+		//console.log("fecha a convertir: ", record.finDeVigencia);
 		expiryDate = excelDateToJSDate(record.finDeVigencia);
-	} else if (record.finDeVigencia instanceof Date) {
-		expiryDate = record.finDeVigencia;
+	} else if (typeof record.finDeVigencia === "string") {
+		//console.log("fecha string");
+		expiryDate = new Date(record.finDeVigencia);
+		// Si el parsing falla, intentar diferentes formatos
+		if (isNaN(expiryDate.getTime())) {
+			// Formato DD/MM/YYYY
+			const parts = record.finDeVigencia.split("/");
+			if (parts.length === 3) {
+				const day = parseInt(parts[0]);
+				const month = parseInt(parts[1]) - 1; // JavaScript months are 0-based
+				const year = parseInt(parts[2]);
+				expiryDate = new Date(year, month, day);
+			}
+		}
 	} else {
 		expiryDate = new Date(record.finDeVigencia);
 	}
@@ -282,12 +309,7 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			row.eachCell((cell, colNumber) => {
 				const header = headers[colNumber];
 				if (header && cell.value !== null && cell.value !== undefined) {
-					// ExcelJS maneja mejor los tipos de datos
-					if (cell.type === ExcelJS.ValueType.Date) {
-						rowObject[header] = cell.value;
-					} else {
-						rowObject[header] = cell.value;
-					}
+					rowObject[header] = cell.value;
 					hasData = true;
 				}
 			});
