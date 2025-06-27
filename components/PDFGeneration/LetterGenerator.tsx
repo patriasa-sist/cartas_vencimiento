@@ -797,8 +797,3 @@ function LetterCard({
 		</Card>
 	);
 }
-
-/**
- * ya funciona mucho mejor, pero no agrega las condiciones como tal dentro del pdf generado,
- * ademas falta hacer que siga el formato correcto para que sea exactamente igual al formato entregado por patria
- */
