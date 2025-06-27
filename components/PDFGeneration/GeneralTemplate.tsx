@@ -184,20 +184,6 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 						</Text>
 					</View>
 				)}
-
-				{letterData.policies.some((p) => p.manualFields?.specificConditions) && (
-					<View style={generalStyles.conditionsBox}>
-						<Text style={generalStyles.conditionsTitle}>CONDICIONES ESPECÍFICAS ADICIONALES:</Text>
-						{letterData.policies.map(
-							(policy, index) =>
-								policy.manualFields?.specificConditions && (
-									<Text key={index} style={generalStyles.conditionText}>
-										• Póliza {policy.policyNumber}: {policy.manualFields.specificConditions}
-									</Text>
-								)
-						)}
-					</View>
-				)}
 			</View>
 
 			{/* Missing Data Summary */}

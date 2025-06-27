@@ -1,96 +1,118 @@
 // components/PDFGeneration/BaseTemplate.tsx
 import React from "react";
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import { PDF_CONSTANTS } from "@/utils/pdfutils";
+import { Document, Page, Text, View, StyleSheet, Image, Font } from "@react-pdf/renderer";
 import { LetterData } from "@/types/pdf";
+import { PDF_ASSETS } from "@/utils/pdfAssets";
 
-// Registrar fuentes (esto se haría en la configuración inicial)
-// Font.register({
-//   family: 'Helvetica',
-//   src: '/fonts/Helvetica.ttf'
-// });
+// Registrar fuentes
+Font.register({
+	family: "Helvetica",
+	fonts: [
+		{ src: "https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica.ttf" },
+		{ src: "https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica-Bold.ttf", fontWeight: "bold" },
+	],
+});
 
 const styles = StyleSheet.create({
 	page: {
 		flexDirection: "column",
 		backgroundColor: "#ffffff",
-		paddingTop: PDF_CONSTANTS.MARGINS.top,
-		paddingBottom: PDF_CONSTANTS.MARGINS.bottom,
-		paddingLeft: PDF_CONSTANTS.MARGINS.left,
-		paddingRight: PDF_CONSTANTS.MARGINS.right,
-		fontFamily: PDF_CONSTANTS.FONTS.primary,
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
+		padding: 40,
+		fontFamily: "Helvetica",
+		fontSize: 10,
 		lineHeight: 1.4,
 	},
 	header: {
-		marginBottom: 30,
-	},
-	headerLocation: {
-		textAlign: "right",
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
-		marginBottom: 10,
-		color: PDF_CONSTANTS.COLORS.textSecondary,
-	},
-	headerReference: {
-		textAlign: "right",
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
+		flexDirection: "column",
+		alignItems: "center",
 		marginBottom: 20,
-		color: PDF_CONSTANTS.COLORS.textSecondary,
+	},
+	logo: {
+		width: 180,
+		marginBottom: 10,
+	},
+	headerText: {
+		fontSize: 10,
+		marginBottom: 5,
+		textAlign: "center",
+	},
+	referenceNumber: {
+		fontSize: 10,
+		marginBottom: 5,
+		textAlign: "center",
 	},
 	clientInfo: {
 		marginBottom: 20,
 	},
 	clientName: {
-		fontSize: PDF_CONSTANTS.FONTS.size.header,
-		fontFamily: PDF_CONSTANTS.FONTS.bold,
-		marginBottom: 5,
-		color: PDF_CONSTANTS.COLORS.textPrimary,
-	},
-	clientDetails: {
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
-		color: PDF_CONSTANTS.COLORS.textSecondary,
+		fontSize: 11,
+		fontWeight: "bold",
 		marginBottom: 2,
 	},
+	clientDetails: {
+		fontSize: 10,
+		marginBottom: 2,
+	},
+	present: {
+		marginBottom: 10,
+	},
 	subject: {
-		fontSize: PDF_CONSTANTS.FONTS.size.header,
-		fontFamily: PDF_CONSTANTS.FONTS.bold,
-		marginBottom: 20,
-		textAlign: "center",
+		fontSize: 11,
+		fontWeight: "bold",
+		marginBottom: 15,
+		textAlign: "left",
 		textDecoration: "underline",
-		color: PDF_CONSTANTS.COLORS.patriaBlue,
 	},
 	greeting: {
 		marginBottom: 15,
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
+		fontSize: 10,
 	},
 	content: {
 		flex: 1,
 		marginBottom: 20,
 	},
 	paragraph: {
-		marginBottom: 12,
+		marginBottom: 10,
 		textAlign: "justify",
-		lineHeight: 1.5,
-	},
-	footer: {
-		borderTopWidth: 1,
-		borderTopColor: PDF_CONSTANTS.COLORS.border,
-		paddingTop: 15,
-		textAlign: "center",
 	},
 	signature: {
 		marginTop: 30,
 		textAlign: "center",
+		fontSize: 10,
+	},
+	signatureBlock: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginTop: 40,
+		paddingHorizontal: 20,
+	},
+	signatureColumn: {
+		width: "45%",
+		alignItems: "center",
+	},
+	signatureImage: {
+		width: 100,
+		height: 50,
+		objectFit: "contain",
+	},
+	signatureName: {
+		fontSize: 8,
+		fontWeight: "bold",
+		marginTop: 5,
+	},
+	signatureTitle: {
+		fontSize: 7,
+		marginTop: 2,
 	},
 	companyName: {
-		fontSize: PDF_CONSTANTS.FONTS.size.header,
-		fontFamily: PDF_CONSTANTS.FONTS.bold,
-		color: PDF_CONSTANTS.COLORS.patriaBlue,
+		fontSize: 11,
+		fontWeight: "bold",
+		textAlign: "center",
 		marginBottom: 5,
 	},
 	companySubtitle: {
-		fontSize: PDF_CONSTANTS.FONTS.size.body,
-		color: PDF_CONSTANTS.COLORS.textSecondary,
+		fontSize: 9,
+		textAlign: "center",
 	},
 	warningBox: {
 		backgroundColor: "#fef3cd",
@@ -102,9 +124,20 @@ const styles = StyleSheet.create({
 	},
 	warningText: {
 		color: "#856404",
-		fontSize: PDF_CONSTANTS.FONTS.size.small,
-		fontFamily: PDF_CONSTANTS.FONTS.bold,
+		fontSize: 8,
+		fontWeight: "bold",
 		textAlign: "center",
+	},
+	footer: {
+		marginTop: 20,
+		fontSize: 8,
+		borderTopWidth: 1,
+		borderTopColor: "#e5e7eb",
+		paddingTop: 10,
+	},
+	footerText: {
+		fontSize: 8,
+		marginBottom: 2,
 	},
 });
 
@@ -117,38 +150,48 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 	return (
 		<Document>
 			<Page size="LETTER" style={styles.page}>
-				{/* Header */}
+				{/* Header con Logo */}
 				<View style={styles.header}>
-					<Text style={styles.headerLocation}>Santa Cruz, {letterData.date}</Text>
-					<Text style={styles.headerReference}>{letterData.referenceNumber}</Text>
+					<Image style={styles.logo} src={PDF_ASSETS.PATRIA_LOGO} />
+					<Text style={styles.headerText}>Santa Cruz, {letterData.date}</Text>
+					<Text style={styles.referenceNumber}>{letterData.referenceNumber}</Text>
 				</View>
 
-				{/* Client Information */}
+				{/* Información del Cliente */}
 				<View style={styles.clientInfo}>
+					<Text style={styles.clientName}>
+						{letterData.client.name.includes("SRL") || letterData.client.name.includes("S.A.")
+							? "Señores"
+							: letterData.client.name.includes("BETTY")
+							? "Señora"
+							: "Señor"}
+					</Text>
 					<Text style={styles.clientName}>{letterData.client.name.toUpperCase()}</Text>
 					{letterData.client.phone && (
-						<Text style={styles.clientDetails}>Telf: {letterData.client.phone}</Text>
+						<Text style={styles.clientDetails}>
+							{letterData.client.name.includes("SRL") ? "Teléfono" : "Telf"}: {letterData.client.phone}
+						</Text>
 					)}
 					{letterData.client.email && (
 						<Text style={styles.clientDetails}>Correo: {letterData.client.email}</Text>
 					)}
-					<Text style={styles.clientDetails}>Presente.</Text>
+					<Text style={styles.present}>Presente.</Text>
 				</View>
 
-				{/* Subject */}
+				{/* Asunto */}
 				<View>
 					<Text style={styles.subject}>
-						AVISO DE VENCIMIENTO{" "}
-						{letterData.templateType === "salud" ? "PÓLIZA DE SEGURO SALUD" : "PÓLIZA DE SEGURO"}
+						Ref.: AVISO DE VENCIMIENTO
+						{letterData.templateType === "salud" ? " POLIZA DE SEGURO SALUD" : " POLIZA DE SEGURO"}
 					</Text>
 				</View>
 
-				{/* Greeting */}
+				{/* Saludo */}
 				<View>
 					<Text style={styles.greeting}>De nuestra consideración:</Text>
 				</View>
 
-				{/* Content Area */}
+				{/* Contenido */}
 				<View style={styles.content}>
 					<Text style={styles.paragraph}>
 						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la
@@ -156,7 +199,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 						Seguro cuyos detalles se especifican a continuación:
 					</Text>
 
-					{/* Dynamic content based on template */}
+					{/* Contenido dinámico basado en la plantilla */}
 					{children}
 
 					<Text style={styles.paragraph}>
@@ -175,10 +218,10 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 
 					<Text style={styles.paragraph}>
 						Es importante informarle que
-						{letterData.templateType === "salud"
-							? ""
-							: ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas,"}{" "}
-						la NO RENOVACIÓN, suspende toda cobertura de la póliza de seguro.
+						{letterData.templateType !== "salud"
+							? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas,"
+							: " la"}{" "}
+						NO RENOVACION, suspende toda cobertura de la póliza de seguro.
 					</Text>
 
 					<Text style={styles.paragraph}>
@@ -187,21 +230,41 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 					</Text>
 				</View>
 
-				{/* Warning for manual review */}
-				{letterData.needsReview && (
-					<View style={styles.warningBox}>
-						<Text style={styles.warningText}>⚠️ CARTA REQUIERE REVISIÓN MANUAL - DATOS INCOMPLETOS</Text>
+				{/* Firma */}
+				<View style={styles.signature}>
+					<Text>Atentamente,</Text>
+				</View>
+
+				{/* Bloque de firmas */}
+				<View style={styles.signatureBlock}>
+					<View style={styles.signatureColumn}>
+						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_CARMEN} />
+						<Text style={styles.signatureName}>Carmen R. Howard Howard</Text>
+						<Text style={styles.signatureTitle}>Ejecutivo de Cuentas Especiales</Text>
+						<Text style={styles.signatureTitle}>PATRIA S.A.</Text>
+						<Text style={styles.signatureTitle}>Corredores y Asesores en Seguros</Text>
 					</View>
-				)}
+
+					<View style={styles.signatureColumn}>
+						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_MARIA} />
+						<Text style={styles.signatureName}>Maria Emilia Vargas Becerra</Text>
+						<Text style={styles.signatureTitle}>Jefe de Producción</Text>
+						<Text style={styles.signatureTitle}>PATRIA S.A.</Text>
+						<Text style={styles.signatureTitle}>Corredores y Asesores en Seguros</Text>
+					</View>
+				</View>
+
+				{/* Firma Corporativa */}
+				<View style={styles.companyName}>
+					<Text>PATRIA S.A.</Text>
+					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
+				</View>
 
 				{/* Footer */}
 				<View style={styles.footer}>
-					<Text style={styles.signature}>Atentamente,</Text>
-					<Text style={styles.companyName}>PATRIA S.A.</Text>
-					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
-					<Text style={styles.clientDetails}>CC/*crfh</Text>
-					<Text style={styles.clientDetails}>CC.: File</Text>
-					<Text style={styles.clientDetails}>Adj.: Lo citado</Text>
+					<Text style={styles.footerText}>CC/*crfh</Text>
+					<Text style={styles.footerText}>CC.: File</Text>
+					<Text style={styles.footerText}>Adj.: Lo citado</Text>
 				</View>
 			</Page>
 		</Document>

@@ -1,13 +1,26 @@
-// components/PDFGeneration/LetterGenerator.tsx - CORREGIDO
+// components/PDFGeneration/LetterGenerator.tsx
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	FileText,
+	Download,
+	Eye,
+	AlertTriangle,
+	CheckCircle,
+	X,
+	Edit3,
+	Save,
+	RefreshCw,
+	Package,
+	Printer,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProcessedInsuranceRecord } from "@/types/insurance";
 import { LetterData, GeneratedLetter, PDFGenerationResult } from "@/types/pdf";
 import {
@@ -26,6 +39,89 @@ interface LetterGeneratorProps {
 	selectedRecords: ProcessedInsuranceRecord[];
 	onClose: () => void;
 	onGenerated?: (result: PDFGenerationResult) => void;
+}
+
+// Componente para input numérico validado
+interface NumericInputProps {
+	value: number | string;
+	onChange: (value: number) => void;
+	placeholder?: string;
+	className?: string;
+	label?: string;
+}
+
+function NumericInput({ value, onChange, placeholder, className, label }: NumericInputProps) {
+	const [displayValue, setDisplayValue] = useState(String(value || ""));
+
+	useEffect(() => {
+		setDisplayValue(String(value || ""));
+	}, [value]);
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const input = e.target.value;
+		// Permitir solo números y punto decimal
+		const numericValue = input.replace(/[^0-9.]/g, "");
+		// Evitar múltiples puntos decimales
+		const parts = numericValue.split(".");
+		const cleanValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : numericValue;
+
+		setDisplayValue(cleanValue);
+		// Convertir a número y llamar onChange
+		const numValue = parseFloat(cleanValue);
+		if (!isNaN(numValue) && numValue >= 0) {
+			onChange(numValue);
+		} else if (cleanValue === "" || cleanValue === ".") {
+			onChange(0);
+		}
+	};
+
+	const handleBlur = () => {
+		// Formatear el valor cuando se pierde el foco
+		const numValue = parseFloat(displayValue);
+		if (!isNaN(numValue)) {
+			setDisplayValue(numValue.toString());
+		} else {
+			setDisplayValue("");
+			onChange(0);
+		}
+	};
+
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<Input
+				type="text"
+				value={displayValue}
+				onChange={handleChange}
+				onBlur={handleBlur}
+				placeholder={placeholder}
+				className={className}
+			/>
+		</div>
+	);
+}
+
+// Componente para textarea de condiciones específicas
+interface ConditionsTextareaProps {
+	value: string;
+	onChange: (value: string) => void;
+	placeholder?: string;
+	label?: string;
+}
+
+function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsTextareaProps) {
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<textarea
+				value={value || ""}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={placeholder}
+				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-none h-16 focus:ring-2 focus:ring-patria-blue focus:border-transparent"
+				rows={3}
+			/>
+		</div>
+	);
 }
 
 export default function LetterGenerator({ selectedRecords, onClose, onGenerated }: LetterGeneratorProps) {
@@ -81,7 +177,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		};
 	}, [letters]);
 
-	// CORREGIDO: Actualizar datos de una carta - función mejorada
+	// Actualizar datos de una carta
 	const updateLetterData = (letterId: string, updates: Partial<LetterData>) => {
 		setLetters((prev) => {
 			const updated = prev.map((letter) => {
@@ -98,7 +194,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		});
 	};
 
-	// NUEVO: Función para calcular si necesita revisión
+	// Función para calcular si necesita revisión
 	const calculateNeedsReview = (letter: LetterData): boolean => {
 		return letter.policies.some((policy) => {
 			if (letter.templateType === "salud") {
@@ -115,7 +211,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		});
 	};
 
-	// NUEVO: Función para calcular datos faltantes dinámicamente
+	// Función para calcular datos faltantes dinámicamente
 	const calculateMissingData = (letter: LetterData): string[] => {
 		const missing: string[] = [];
 
@@ -386,93 +482,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	);
 }
 
-// NUEVO: Componente para input numérico validado
-interface NumericInputProps {
-	value: number | string;
-	onChange: (value: number) => void;
-	placeholder?: string;
-	className?: string;
-	label?: string;
-}
-
-function NumericInput({ value, onChange, placeholder, className, label }: NumericInputProps) {
-	const [displayValue, setDisplayValue] = useState(String(value || ""));
-
-	useEffect(() => {
-		setDisplayValue(String(value || ""));
-	}, [value]);
-
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const input = e.target.value;
-
-		// Permitir solo números y punto decimal
-		const numericValue = input.replace(/[^0-9.]/g, "");
-
-		// Evitar múltiples puntos decimales
-		const parts = numericValue.split(".");
-		const cleanValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : numericValue;
-
-		setDisplayValue(cleanValue);
-
-		// Convertir a número y llamar onChange
-		const numValue = parseFloat(cleanValue);
-		if (!isNaN(numValue) && numValue >= 0) {
-			onChange(numValue);
-		} else if (cleanValue === "" || cleanValue === ".") {
-			onChange(0);
-		}
-	};
-
-	const handleBlur = () => {
-		// Formatear el valor cuando se pierde el foco
-		const numValue = parseFloat(displayValue);
-		if (!isNaN(numValue)) {
-			setDisplayValue(numValue.toString());
-		} else {
-			setDisplayValue("");
-			onChange(0);
-		}
-	};
-
-	return (
-		<div>
-			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
-			<Input
-				type="text"
-				value={displayValue}
-				onChange={handleChange}
-				onBlur={handleBlur}
-				placeholder={placeholder}
-				className={className}
-			/>
-		</div>
-	);
-}
-
-// NUEVO: Componente para textarea de condiciones específicas
-interface ConditionsTextareaProps {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-	label?: string;
-}
-
-function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsTextareaProps) {
-	return (
-		<div>
-			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
-			<textarea
-				value={value || ""}
-				onChange={(e) => onChange(e.target.value)}
-				placeholder={placeholder}
-				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-none h-16 focus:ring-2 focus:ring-patria-blue focus:border-transparent"
-				rows={3}
-			/>
-		</div>
-	);
-}
-
-// CORREGIDO: Componente para cada carta individual
+// Componente para cada carta individual
 interface LetterCardProps {
 	letter: LetterData;
 	isEditing: boolean;
@@ -498,10 +508,10 @@ function LetterCard({
 	onDownload,
 	onUpdateLetterData,
 }: LetterCardProps) {
-	// CORREGIDO: Estado local sincronizado con props
+	// Estado local sincronizado con props
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
 
-	// NUEVO: Sincronizar estado local con props cuando cambie la carta
+	// Sincronizar estado local con props cuando cambie la carta
 	useEffect(() => {
 		setEditedLetter(letter);
 	}, [letter]);
@@ -510,7 +520,7 @@ function LetterCard({
 		onSaveEdit(editedLetter);
 	};
 
-	// CORREGIDO: Función para actualizar póliza individual con tipado correcto
+	// Función para actualizar póliza individual con tipado correcto
 	const updatePolicy = (policyIndex: number, field: string, value: any) => {
 		const updatedLetter = {
 			...editedLetter,
@@ -529,7 +539,7 @@ function LetterCard({
 
 		setEditedLetter(updatedLetter);
 
-		// NUEVO: Actualizar inmediatamente en el estado padre para feedback visual
+		// Actualizar inmediatamente en el estado padre para feedback visual
 		onUpdateLetterData(letter.id, updatedLetter);
 	};
 
@@ -659,7 +669,7 @@ function LetterCard({
 									</div>
 								</div>
 
-								{/* CORREGIDO: Campos editables mejorados */}
+								{/* Campos editables mejorados */}
 								<div className="space-y-2">
 									{isEditing && (
 										<>
@@ -703,7 +713,6 @@ function LetterCard({
 														/>
 													</div>
 
-													{/* NUEVO: Campo para condiciones específicas */}
 													<ConditionsTextarea
 														label="Condiciones específicas:"
 														value={policy.manualFields?.specificConditions || ""}
@@ -717,7 +726,7 @@ function LetterCard({
 										</>
 									)}
 
-									{/* CORREGIDO: Mostrar datos guardados con mejor formato */}
+									{/* Mostrar datos guardados con mejor formato */}
 									{!isEditing && policy.manualFields && (
 										<div className="text-xs space-y-1">
 											{letter.templateType === "salud" && policy.manualFields.renewalPremium && (
@@ -761,7 +770,7 @@ function LetterCard({
 					))}
 				</div>
 
-				{/* CORREGIDO: Datos faltantes actualizados dinámicamente */}
+				{/* Datos faltantes actualizados dinámicamente */}
 				{letter.missingData.length > 0 && (
 					<div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
 						<div className="flex items-center mb-2">
@@ -777,7 +786,7 @@ function LetterCard({
 					</div>
 				)}
 
-				{/* NUEVO: Mensaje cuando todos los datos están completos */}
+				{/* Mensaje cuando todos los datos están completos */}
 				{!letter.needsReview && (
 					<div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
 						<div className="flex items-center">

@@ -77,6 +77,62 @@ const healthStyles = StyleSheet.create({
 		marginBottom: 2,
 		color: "#6b7280",
 	},
+	table: {
+		display: "table",
+		width: "100%",
+		borderStyle: "solid",
+		borderWidth: 1,
+		borderColor: "#000",
+		marginBottom: 10,
+	},
+	tableRow: {
+		flexDirection: "row",
+		borderBottomWidth: 1,
+		borderBottomColor: "#000",
+		borderBottomStyle: "solid",
+		minHeight: 25,
+		verticalAlign: "middle",
+	},
+	tableRowNoBottom: {
+		flexDirection: "row",
+		minHeight: 25,
+		verticalAlign: "middle",
+	},
+	tableHeaderCell: {
+		backgroundColor: "#f0f0f0",
+		fontWeight: "bold",
+		padding: 5,
+		fontSize: 9,
+		borderRightWidth: 1,
+		borderRightColor: "#000",
+		borderRightStyle: "solid",
+		textAlign: "center",
+	},
+	tableHeaderCellLast: {
+		backgroundColor: "#f0f0f0",
+		fontWeight: "bold",
+		padding: 5,
+		fontSize: 9,
+		textAlign: "center",
+	},
+	tableCell: {
+		padding: 5,
+		fontSize: 9,
+		borderRightWidth: 1,
+		borderRightColor: "#000",
+		borderRightStyle: "solid",
+		textAlign: "center",
+	},
+	tableCellLast: {
+		padding: 5,
+		fontSize: 9,
+		textAlign: "center",
+	},
+	covidInfo: {
+		marginTop: 5,
+		fontSize: 8,
+		fontStyle: "italic",
+	},
 });
 
 interface HealthTemplateProps {
@@ -87,42 +143,64 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 	return (
 		<BaseTemplate letterData={letterData}>
 			<View style={healthStyles.policyTable}>
-				{letterData.policies.map((policy, index) => (
-					<View key={index} style={healthStyles.policyGroup}>
-						<Text style={healthStyles.policyHeader}>
-							Póliza {index + 1} - {policy.company}
-						</Text>
-
-						<View style={healthStyles.policyRow}>
-							<Text style={healthStyles.policyLabel}>FECHA DE VENCIMIENTO:</Text>
-							<Text style={healthStyles.policyValue}>{policy.expiryDate}</Text>
-						</View>
-
-						<View style={healthStyles.policyRow}>
-							<Text style={healthStyles.policyLabel}>No. DE PÓLIZA:</Text>
-							<Text style={healthStyles.policyValue}>{policy.policyNumber}</Text>
-						</View>
-
-						<View style={healthStyles.policyRow}>
-							<Text style={healthStyles.policyLabel}>COMPAÑÍA:</Text>
-							<Text style={healthStyles.policyValue}>{policy.company}</Text>
-						</View>
-
-						<View style={healthStyles.policyRow}>
-							<Text style={healthStyles.policyLabel}>RAMO:</Text>
-							<Text style={healthStyles.policyValue}>{policy.branch}</Text>
-						</View>
-
-						{/* Asegurados (para seguros familiares) */}
-						{letterData.client.name && (
-							<View style={healthStyles.aseguradosSection}>
-								<Text style={healthStyles.aseguradosTitle}>Asegurados:</Text>
-								<Text style={healthStyles.aseguradoName}>{letterData.client.name.toUpperCase()}</Text>
-								{/* Aquí se pueden agregar más asegurados si hay datos familiares */}
+				{letterData.policies.map((policy, policyIndex) => (
+					<View key={policyIndex} style={{ marginBottom: 15 }}>
+						<View style={healthStyles.table}>
+							{/* Header Row */}
+							<View style={healthStyles.tableRow}>
+								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
+									<Text>FECHA DE VENCIMIENTO</Text>
+								</View>
+								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
+									<Text>No. DE PÓLIZA</Text>
+								</View>
+								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
+									<Text>COMPAÑÍA</Text>
+								</View>
+								<View style={[healthStyles.tableHeaderCellLast, { width: "25%" }]}>
+									<Text>RAMO</Text>
+								</View>
 							</View>
-						)}
 
-						{/* Prima de renovación */}
+							{/* Data Row */}
+							<View style={healthStyles.tableRowNoBottom}>
+								<View style={[healthStyles.tableCell, { width: "25%" }]}>
+									<Text>{policy.expiryDate}</Text>
+								</View>
+								<View style={[healthStyles.tableCell, { width: "25%" }]}>
+									<Text>{policy.policyNumber}</Text>
+								</View>
+								<View style={[healthStyles.tableCell, { width: "25%" }]}>
+									<Text>{policy.company}</Text>
+								</View>
+								<View style={[healthStyles.tableCellLast, { width: "25%" }]}>
+									<Text>{policy.branch}</Text>
+									{policy.branch.toLowerCase().includes("covid") && (
+										<Text style={healthStyles.covidInfo}>
+											({policy.branch.toLowerCase().includes("sin") ? "Sin" : "Con"} cobertura
+											covid)
+										</Text>
+									)}
+								</View>
+							</View>
+						</View>
+
+						{/* Lista de Asegurados */}
+						<View style={healthStyles.aseguradosSection}>
+							<Text style={healthStyles.aseguradosTitle}>Asegurados.</Text>
+							<Text style={healthStyles.aseguradoName}>{letterData.client.name.toUpperCase()}</Text>
+
+							{/* Si es la póliza de VILLEGAS ORELLANA, GONZALO, mostrar asegurados adicionales */}
+							{letterData.client.name.includes("VILLEGAS") && (
+								<>
+									<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, ADRIAN</Text>
+									<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, NOAH</Text>
+									<Text style={healthStyles.aseguradoName}>SAGARNAGA FOREST, RAISA VIVIANA</Text>
+								</>
+							)}
+						</View>
+
+						{/* Prima de Renovación */}
 						{policy.manualFields?.renewalPremium ? (
 							<View style={healthStyles.renewalPremium}>
 								<Text style={healthStyles.renewalText}>
@@ -134,20 +212,6 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 								<Text style={healthStyles.missingDataText}>
 									⚠️ FALTA: Prima de renovación anual (completar manualmente)
 								</Text>
-							</View>
-						)}
-
-						{/* Datos faltantes específicos para esta póliza */}
-						{letterData.missingData.length > 0 && (
-							<View style={healthStyles.missingDataBox}>
-								<Text style={healthStyles.missingDataText}>DATOS FALTANTES:</Text>
-								{letterData.missingData
-									.filter((item) => item.includes(policy.policyNumber))
-									.map((item, idx) => (
-										<Text key={idx} style={healthStyles.missingDataText}>
-											• {item}
-										</Text>
-									))}
 							</View>
 						)}
 					</View>
