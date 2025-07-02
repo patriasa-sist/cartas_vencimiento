@@ -17,7 +17,8 @@ const styles = StyleSheet.create({
 	page: {
 		flexDirection: "column",
 		backgroundColor: "#ffffff",
-		padding: 40,
+		// Reducir el padding general de la página para ganar espacio
+		padding: 30, // Antes 40
 		fontFamily: "Helvetica",
 		fontSize: 10,
 		lineHeight: 1.4,
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
 	header: {
 		flexDirection: "column",
 		alignItems: "center",
-		marginBottom: 20,
+		marginBottom: 15, // Antes 20
 	},
 	logo: {
 		width: 180,
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	clientInfo: {
-		marginBottom: 20,
+		marginBottom: 15, // Antes 20
 	},
 	clientName: {
 		fontSize: 11,
@@ -59,31 +60,30 @@ const styles = StyleSheet.create({
 	subject: {
 		fontSize: 11,
 		fontWeight: "bold",
-		marginBottom: 15,
+		marginBottom: 15, // Antes 15
 		textAlign: "left",
 		textDecoration: "underline",
 	},
 	greeting: {
-		marginBottom: 15,
+		marginBottom: 15, // Antes 15
 		fontSize: 10,
 	},
 	content: {
-		// Eliminado flex: 1 para evitar que consuma todo el espacio disponible y cause saltos de página prematuros.
-		marginBottom: 20, // Mantener un margen en la parte inferior.
+		marginBottom: 15, // Antes 20
 	},
 	paragraph: {
 		marginBottom: 10,
 		textAlign: "justify",
 	},
 	signature: {
-		marginTop: 30,
+		marginTop: 20, // Antes 30
 		textAlign: "center",
 		fontSize: 10,
 	},
 	signatureBlock: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginTop: 40,
+		marginTop: 30, // Antes 40
 		paddingHorizontal: 20,
 	},
 	signatureColumn: {
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	footer: {
-		marginTop: 20,
+		marginTop: 15, // Antes 20
 		fontSize: 8,
 		borderTopWidth: 1,
 		borderTopColor: "#e5e7eb",

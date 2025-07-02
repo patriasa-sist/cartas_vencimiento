@@ -11,7 +11,7 @@ const generalStyles = StyleSheet.create({
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#e5e7eb",
-		marginBottom: 20,
+		marginBottom: 15, // Antes 20
 	},
 	tableRow: {
 		flexDirection: "row",
@@ -43,8 +43,8 @@ const generalStyles = StyleSheet.create({
 	},
 	conditionsBox: {
 		backgroundColor: "#f8f9fa",
-		padding: 10,
-		marginTop: 15,
+		padding: 8, // Antes 10
+		marginTop: 10, // Antes 15
 		borderWidth: 1,
 		borderColor: "#dee2e6",
 		borderRadius: 4,
