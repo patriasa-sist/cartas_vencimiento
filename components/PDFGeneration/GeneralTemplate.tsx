@@ -8,6 +8,7 @@ import { formatUSD, formatCurrency } from "@/utils/pdfutils"; // Import formatCu
 const generalStyles = StyleSheet.create({
 	policyTable: {
 		width: "100%",
+		// Removed display: "table" due to @react-pdf/renderer compatibility issues
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#e5e7eb",
@@ -26,6 +27,10 @@ const generalStyles = StyleSheet.create({
 		borderTopWidth: 0,
 		borderColor: "#e5e7eb",
 		padding: 5,
+		flex: 1, // Use flex for distribution
+		textAlign: "center", // Center align text in data cells
+		justifyContent: "center", // Center content vertically
+		alignItems: "center", // Center content horizontally
 	},
 	tableHeaderCol: {
 		borderStyle: "solid",
@@ -35,16 +40,20 @@ const generalStyles = StyleSheet.create({
 		borderColor: "#e5e7eb",
 		padding: 5,
 		backgroundColor: "#172554",
+		flex: 1, // Use flex for distribution
+		textAlign: "center", // Center align text in header cells
+		justifyContent: "center", // Center content vertically
+		alignItems: "center", // Center content horizontally
 	},
 	headerText: {
 		color: "white",
 		fontSize: 8,
 		fontWeight: "bold",
-		textAlign: "center",
+		textAlign: "center", // Ensure header text is centered
 	},
 	cellText: {
 		fontSize: 8,
-		textAlign: "center",
+		textAlign: "center", // Ensure cell text is centered
 	},
 	conditionsBox: {
 		backgroundColor: "#f8f9fa",
@@ -85,6 +94,28 @@ interface GeneralTemplateProps {
 }
 
 export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) => {
+	// Helper function to format monetary values with currency symbol
+	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
+		if (value === undefined || value === null || isNaN(value)) {
+			return "No especificado";
+		}
+		let formattedValue: string;
+		// Use es-BO locale for consistent thousands (dot) and decimal (comma) separators
+		const numberFormatter = new Intl.NumberFormat("es-BO", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+
+		formattedValue = numberFormatter.format(value);
+
+		if (currency === "Bs.") {
+			return `Bs. ${formattedValue}`;
+		} else if (currency === "$us.") {
+			return `$us. ${formattedValue}`;
+		}
+		return value.toString(); // Fallback if currency is not specified
+	};
+
 	return (
 		<BaseTemplate letterData={letterData}>
 			{/* Policy Table */}
@@ -101,18 +132,12 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
 					</View>
 					<View style={[generalStyles.tableHeaderCol, { width: "20%" }]}>
-						{" "}
-						{/* Adjusted width for Ramo */}
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
 					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
-						{" "}
-						{/* Adjusted width for Valor Asegurado */}
 						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
 					</View>
 					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
-						{" "}
-						{/* Added Prima column */}
 						<Text style={generalStyles.headerText}>PRIMA</Text>
 					</View>
 				</View>
@@ -130,20 +155,16 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "20%" }]}>
-							{" "}
-							{/* Adjusted width for Ramo */}
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							{" "}
-							{/* Adjusted width for Valor Asegurado */}
 							<Text style={generalStyles.cellText}>
-								{policy.insuredValue ? formatUSD(policy.insuredValue) : "No especificado"}
+								{policy.manualFields?.insuredValue
+									? formatUSD(policy.manualFields.insuredValue)
+									: "No especificado"}
 							</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							{" "}
-							{/* Added Prima column */}
 							<Text style={generalStyles.cellText}>
 								{policy.manualFields?.premium
 									? formatCurrency(policy.manualFields.premium)
@@ -173,12 +194,19 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 			<View style={generalStyles.conditionsBox}>
 				<Text style={generalStyles.conditionsTitle}>CONDICIONES ESPECÍFICAS:</Text>
 
-				{letterData.policies.some((p) => p.manualFields?.deductibles) ? (
+				{letterData.policies.some(
+					(p) => p.manualFields?.deductibles !== undefined && p.manualFields?.deductibles !== null
+				) ? (
 					letterData.policies.map(
 						(policy, index) =>
-							policy.manualFields?.deductibles && (
+							policy.manualFields?.deductibles !== undefined &&
+							policy.manualFields?.deductibles !== null && (
 								<Text key={index} style={generalStyles.conditionText}>
-									• Deducible coaseguro: {policy.manualFields.deductibles}
+									• Deducible coaseguro:{" "}
+									{formatMonetaryValue(
+										policy.manualFields.deductibles,
+										policy.manualFields.deductiblesCurrency
+									)}
 								</Text>
 							)
 					)
@@ -190,12 +218,19 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 					</View>
 				)}
 
-				{letterData.policies.some((p) => p.manualFields?.territoriality) ? (
+				{letterData.policies.some(
+					(p) => p.manualFields?.territoriality !== undefined && p.manualFields?.territoriality !== null
+				) ? (
 					letterData.policies.map(
 						(policy, index) =>
-							policy.manualFields?.territoriality && (
+							policy.manualFields?.territoriality !== undefined &&
+							policy.manualFields?.territoriality !== null && (
 								<Text key={index} style={generalStyles.conditionText}>
-									• Extraterritorialidad: {policy.manualFields.territoriality}
+									• Extraterritorialidad:{" "}
+									{formatMonetaryValue(
+										policy.manualFields.territoriality,
+										policy.manualFields.territorialityCurrency
+									)}
 								</Text>
 							)
 					)
@@ -203,6 +238,24 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 					<View style={generalStyles.missingDataBox}>
 						<Text style={generalStyles.missingDataText}>
 							⚠️ COMPLETAR: Información sobre extraterritorialidad (si aplica)
+						</Text>
+					</View>
+				)}
+
+				{/* Specific Conditions Textarea Content */}
+				{letterData.policies.some((p) => p.manualFields?.specificConditions) ? (
+					letterData.policies.map(
+						(policy, index) =>
+							policy.manualFields?.specificConditions && (
+								<Text key={index} style={generalStyles.conditionText}>
+									• {policy.manualFields.specificConditions}
+								</Text>
+							)
+					)
+				) : (
+					<View style={generalStyles.missingDataBox}>
+						<Text style={generalStyles.missingDataText}>
+							⚠️ COMPLETAR: Condiciones específicas adicionales
 						</Text>
 					</View>
 				)}

@@ -77,12 +77,17 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			policyNumber: record.noPoliza,
 			company: record.compania,
 			branch: record.ramo,
-			insuredValue: record.valorAsegurado,
-			premium: record.prima, // Original premium from Excel
+			insuredValue: record.valorAsegurado, // Original value from Excel
+			premium: record.prima, // Original value from Excel
 			insuredMatter: record.materiaAsegurada,
 			manualFields: {
 				premium: record.prima, // Initialize editable premium with original value
 				originalPremium: record.prima, // Store original premium for reference
+				insuredValue: record.valorAsegurado, // Initialize editable insuredValue with original value
+				originalInsuredValue: record.valorAsegurado, // Store original insuredValue for reference
+				// Initialize currency for deductibles and territoriality
+				deductiblesCurrency: "Bs.",
+				territorialityCurrency: "Bs.",
 			},
 		}));
 
@@ -117,35 +122,37 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 	policies.forEach((policy, index) => {
 		const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
-		// Check for premium in manualFields first, then original premium
-		if (!policy.manualFields?.premium || policy.manualFields.premium === 0) {
+		// Check for insuredValue in manualFields
+		if (
+			policy.manualFields?.insuredValue === undefined ||
+			policy.manualFields?.insuredValue === null ||
+			policy.manualFields.insuredValue <= 0
+		) {
+			missing.push(`${policyLabel}: Valor Asegurado`);
+		}
+
+		// Check for premium in manualFields
+		if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
 			missing.push(`${policyLabel}: Prima`);
 		}
 
-		if (templateType === "general") {
-			// For general template, specific conditions are always expected to be filled manually
-			if (!policy.manualFields?.specificConditions) {
-				missing.push(`${policyLabel}: Condiciones específicas (deducibles, coaseguro, etc.)`);
-			}
-
-			// Check for territoriality if applicable (e.g., auto, CTI, transport)
-			if (
-				(policy.branch.toLowerCase().includes("auto") ||
-					policy.branch.toLowerCase().includes("cti") ||
-					policy.branch.toLowerCase().includes("transporte")) &&
-				!policy.manualFields?.territoriality
-			) {
-				missing.push(`${policyLabel}: Información de extraterritorialidad`);
-			}
-		}
-
 		if (templateType === "salud") {
-			// For health template, renewal premium is expected
-			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium === 0) {
+			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
 				missing.push(`${policyLabel}: Prima de renovación anual`);
 			}
-			// This check is more of a reminder, not a strict missing field
-			missing.push(`${policyLabel}: Verificar cobertura COVID`);
+			missing.push(`${policyLabel}: Verificar cobertura COVID`); // This is a reminder, not a strict missing field
+		}
+
+		if (templateType === "general") {
+			if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
+				missing.push(`${policyLabel}: Información de deducibles`);
+			}
+			if (!policy.manualFields?.territoriality || policy.manualFields.territoriality <= 0) {
+				missing.push(`${policyLabel}: Información de extraterritorialidad`);
+			}
+			if (!policy.manualFields?.specificConditions) {
+				missing.push(`${policyLabel}: Condiciones específicas`);
+			}
 		}
 	});
 
@@ -247,27 +254,32 @@ export function validateRecordForPDF(record: ProcessedInsuranceRecord): { valid:
 }
 
 /**
- * Formatea moneda boliviana
+ * Formatea moneda boliviana (Bs.) con coma como separador decimal.
  */
 export function formatCurrency(amount: number): string {
 	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 
 	return new Intl.NumberFormat("es-BO", {
+		// Locale for Bolivia uses '.' for thousands and ',' for decimals
 		style: "currency",
 		currency: "BOB",
-		minimumFractionDigits: 0,
+		minimumFractionDigits: 2, // Always show two decimal places
+		maximumFractionDigits: 2,
 	}).format(amount);
 }
 
 /**
- * Formatea moneda USD (para valores asegurados)
+ * Formatea moneda USD ($us.) con coma como separador decimal.
+ * Utiliza el locale es-BO y añade el prefijo manualmente para asegurar el formato deseado.
  */
 export function formatUSD(amount: number): string {
 	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 0,
+	// Use es-BO locale to get '.' for thousands and ',' for decimals
+	const formattedNumber = new Intl.NumberFormat("es-BO", {
+		minimumFractionDigits: 2, // Always show two decimal places
+		maximumFractionDigits: 2,
 	}).format(amount);
+
+	return `$us. ${formattedNumber}`; // Manually prepend "$us."
 }

@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { ProcessedInsuranceRecord } from "@/types/insurance";
 import { LetterData, GeneratedLetter, PDFGenerationResult } from "@/types/pdf";
 import {
@@ -100,6 +101,83 @@ function NumericInput({ value, onChange, placeholder, className, label }: Numeri
 				placeholder={placeholder}
 				className={className}
 			/>
+		</div>
+	);
+}
+
+// Nuevo componente para input numérico con selección de moneda
+interface NumericInputWithCurrencyProps {
+	value: number | undefined;
+	currency: "Bs." | "$us.";
+	onValueChange: (value: number) => void;
+	onCurrencyChange: (currency: "Bs." | "$us.") => void;
+	label?: string;
+	placeholder?: string;
+	className?: string;
+}
+
+function NumericInputWithCurrency({
+	value,
+	currency,
+	onValueChange,
+	onCurrencyChange,
+	label,
+	placeholder,
+	className,
+}: NumericInputWithCurrencyProps) {
+	const [displayValue, setDisplayValue] = useState(value !== undefined && value !== null ? String(value) : "");
+
+	useEffect(() => {
+		setDisplayValue(value !== undefined && value !== null ? String(value) : "");
+	}, [value]);
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const input = e.target.value;
+		const numericValue = input.replace(/[^0-9.]/g, "");
+		const parts = numericValue.split(".");
+		const cleanValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : numericValue;
+
+		setDisplayValue(cleanValue);
+		const numValue = parseFloat(cleanValue);
+		if (!isNaN(numValue) && numValue >= 0) {
+			onValueChange(numValue);
+		} else if (cleanValue === "" || cleanValue === ".") {
+			onValueChange(0); // Treat empty or just a dot as 0 for internal logic
+		}
+	};
+
+	const handleBlur = () => {
+		const numValue = parseFloat(displayValue);
+		if (!isNaN(numValue)) {
+			setDisplayValue(numValue.toString());
+		} else {
+			setDisplayValue("");
+			onValueChange(0);
+		}
+	};
+
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<div className="flex items-center space-x-2">
+				<Input
+					type="text"
+					value={displayValue}
+					onChange={handleChange}
+					onBlur={handleBlur}
+					placeholder={placeholder}
+					className={className}
+				/>
+				<Select value={currency} onValueChange={(val: "Bs." | "$us.") => onCurrencyChange(val)}>
+					<SelectTrigger className="w-20 h-8 text-xs">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="Bs.">Bs.</SelectItem>
+						<SelectItem value="$us.">$us.</SelectItem>
+					</SelectContent>
+				</Select>
+			</div>
 		</div>
 	);
 }
@@ -202,6 +280,19 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		// A letter needs review if any of its policies have missing manual fields
 		return (
 			letter.policies.some((policy) => {
+				// Check for insuredValue
+				if (
+					policy.manualFields?.insuredValue === undefined ||
+					policy.manualFields?.insuredValue === null ||
+					policy.manualFields.insuredValue <= 0
+				) {
+					return true;
+				}
+				// Check for premium. If original premium was 0 or not provided, and editable premium is still 0/not provided
+				if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
+					return true;
+				}
+
 				// For health template, check renewalPremium
 				if (letter.templateType === "salud") {
 					return !policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0;
@@ -211,7 +302,9 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 					return (
 						!policy.manualFields?.specificConditions ||
 						!policy.manualFields?.deductibles ||
-						!policy.manualFields?.territoriality
+						policy.manualFields.deductibles <= 0 ||
+						!policy.manualFields?.territoriality ||
+						policy.manualFields.territoriality <= 0
 					);
 				}
 				return false;
@@ -226,8 +319,17 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		letter.policies.forEach((policy, index) => {
 			const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
+			// Check for insuredValue
+			if (
+				policy.manualFields?.insuredValue === undefined ||
+				policy.manualFields?.insuredValue === null ||
+				policy.manualFields.insuredValue <= 0
+			) {
+				missing.push(`${policyLabel}: Valor Asegurado`);
+			}
+
 			// Check for premium. If original premium was 0 or not provided, and editable premium is still 0/not provided
-			if (!policy.manualFields?.premium || policy.manualFields.premium === 0) {
+			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
 				missing.push(`${policyLabel}: Prima`);
 			}
 
@@ -239,10 +341,10 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			}
 
 			if (letter.templateType === "general") {
-				if (!policy.manualFields?.deductibles) {
+				if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
 					missing.push(`${policyLabel}: Información de deducibles`);
 				}
-				if (!policy.manualFields?.territoriality) {
+				if (!policy.manualFields?.territoriality || policy.manualFields.territoriality <= 0) {
 					missing.push(`${policyLabel}: Información de extraterritorialidad`);
 				}
 				if (!policy.manualFields?.specificConditions) {
@@ -479,6 +581,8 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						<div className="flex items-center">
 							<CheckCircle className="h-5 w-5 text-green-600 mr-2" />
 							<div>
+								{" "}
+								{/* This div was missing a closing tag */}
 								<div className="font-medium text-green-800">
 									✅ {generationResult.totalGenerated} cartas generadas exitosamente
 								</div>
@@ -487,7 +591,8 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 										{generationResult.errors.length} errores encontrados
 									</div>
 								)}
-							</div>
+							</div>{" "}
+							{/* Closing tag added here */}
 						</div>
 					</CardContent>
 				</Card>
@@ -535,18 +640,29 @@ function LetterCard({
 	};
 
 	// Function to update individual policy with correct typing
-	const updatePolicy = (policyIndex: number, field: string, value: any) => {
-		const updatedPolicies = editedLetter.policies.map((policy, index) =>
-			index === policyIndex
-				? {
-						...policy,
-						manualFields: {
-							...policy.manualFields,
-							[field]: value,
-						},
-				  }
-				: policy
-		);
+	const updatePolicy = (
+		policyIndex: number,
+		field: string,
+		value: any,
+		currencyField?: string,
+		currencyValue?: "Bs." | "$us."
+	) => {
+		const updatedPolicies = editedLetter.policies.map((policy, index) => {
+			if (index === policyIndex) {
+				const updatedManualFields = {
+					...policy.manualFields,
+					[field]: value,
+				};
+				if (currencyField && currencyValue) {
+					updatedManualFields[currencyField] = currencyValue;
+				}
+				return {
+					...policy,
+					manualFields: updatedManualFields,
+				};
+			}
+			return policy;
+		});
 
 		const updatedLetterData = {
 			...editedLetter,
@@ -565,6 +681,27 @@ function LetterCard({
 
 	const getTemplateColor = (type: "salud" | "general") => {
 		return type === "salud" ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50";
+	};
+
+	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
+		if (value === undefined || value === null || isNaN(value)) {
+			return "No especificado";
+		}
+		let formattedValue: string;
+		if (currency === "Bs.") {
+			formattedValue = new Intl.NumberFormat("es-BO", {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}).format(value);
+			return `Bs. ${formattedValue}`;
+		} else if (currency === "$us.") {
+			formattedValue = new Intl.NumberFormat("en-US", {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}).format(value);
+			return `$us. ${formattedValue}`;
+		}
+		return value.toString(); // Fallback
 	};
 
 	return (
@@ -677,8 +814,10 @@ function LetterCard({
 								<div>
 									<div className="text-gray-600">Ramo: {policy.branch}</div>
 									<div className="text-gray-600">
-										Valor:{" "}
-										{policy.insuredValue ? formatUSD(policy.insuredValue) : "No especificado"}
+										Valor Original:{" "}
+										{policy.manualFields?.originalInsuredValue
+											? formatUSD(policy.manualFields.originalInsuredValue)
+											: "No especificado"}
 									</div>
 									<div className="text-gray-600">
 										Prima Original:{" "}
@@ -692,6 +831,15 @@ function LetterCard({
 								<div className="space-y-2">
 									{isEditing && (
 										<>
+											{/* Editable Insured Value */}
+											<NumericInput
+												label="Valor Asegurado (editable):"
+												value={policy.manualFields?.insuredValue || 0}
+												onChange={(value) => updatePolicy(index, "insuredValue", value)}
+												placeholder="0.00"
+												className="text-xs h-8"
+											/>
+
 											{/* Editable Premium for both templates */}
 											<NumericInput
 												label="Prima (editable):"
@@ -715,33 +863,33 @@ function LetterCard({
 											{/* General-specific fields */}
 											{letter.templateType === "general" && (
 												<>
-													<div>
-														<label className="text-xs text-gray-600 block mb-1">
-															Deducibles:
-														</label>
-														<Input
-															placeholder="10% mínimo Bs 1.000"
-															value={policy.manualFields?.deductibles || ""}
-															onChange={(e) =>
-																updatePolicy(index, "deductibles", e.target.value)
-															}
-															className="text-xs h-8"
-														/>
-													</div>
+													<NumericInputWithCurrency
+														label="Deducibles:"
+														value={policy.manualFields?.deductibles}
+														currency={policy.manualFields?.deductiblesCurrency || "Bs."}
+														onValueChange={(value) =>
+															updatePolicy(index, "deductibles", value)
+														}
+														onCurrencyChange={(currency) =>
+															updatePolicy(index, "deductiblesCurrency", currency)
+														}
+														placeholder="0.00"
+														className="text-xs h-8"
+													/>
 
-													<div>
-														<label className="text-xs text-gray-600 block mb-1">
-															Extraterritorialidad:
-														</label>
-														<Input
-															placeholder="Bs 400 (contado) / Bs 500 (posterior)"
-															value={policy.manualFields?.territoriality || ""}
-															onChange={(e) =>
-																updatePolicy(index, "territoriality", e.target.value)
-															}
-															className="text-xs h-8"
-														/>
-													</div>
+													<NumericInputWithCurrency
+														label="Extraterritorialidad:"
+														value={policy.manualFields?.territoriality}
+														currency={policy.manualFields?.territorialityCurrency || "Bs."}
+														onValueChange={(value) =>
+															updatePolicy(index, "territoriality", value)
+														}
+														onCurrencyChange={(currency) =>
+															updatePolicy(index, "territorialityCurrency", currency)
+														}
+														placeholder="0.00"
+														className="text-xs h-8"
+													/>
 
 													<ConditionsTextarea
 														label="Condiciones específicas:"
@@ -759,6 +907,14 @@ function LetterCard({
 									{/* Display saved data with better formatting */}
 									{!isEditing && policy.manualFields && (
 										<div className="text-xs space-y-1">
+											{/* Display editable insured value */}
+											{policy.manualFields.insuredValue !== undefined &&
+												policy.manualFields.insuredValue !== null && (
+													<div className="text-green-700 font-medium">
+														✓ Valor Asegurado (editable):{" "}
+														{formatUSD(policy.manualFields.insuredValue)}
+													</div>
+												)}
 											{/* Display editable premium */}
 											{policy.manualFields.premium !== undefined &&
 												policy.manualFields.premium !== null && (
@@ -778,16 +934,26 @@ function LetterCard({
 												)}
 											{letter.templateType === "general" && (
 												<>
-													{policy.manualFields.deductibles && (
-														<div className="text-green-700 font-medium">
-															✓ Deducibles: {policy.manualFields.deductibles}
-														</div>
-													)}
-													{policy.manualFields.territoriality && (
-														<div className="text-green-700 font-medium">
-															✓ Extraterritorialidad: {policy.manualFields.territoriality}
-														</div>
-													)}
+													{policy.manualFields.deductibles !== undefined &&
+														policy.manualFields.deductibles !== null && (
+															<div className="text-green-700 font-medium">
+																✓ Deducibles:{" "}
+																{formatMonetaryValue(
+																	policy.manualFields.deductibles,
+																	policy.manualFields.deductiblesCurrency
+																)}
+															</div>
+														)}
+													{policy.manualFields.territoriality !== undefined &&
+														policy.manualFields.territoriality !== null && (
+															<div className="text-green-700 font-medium">
+																✓ Extraterritorialidad:{" "}
+																{formatMonetaryValue(
+																	policy.manualFields.territoriality,
+																	policy.manualFields.territorialityCurrency
+																)}
+															</div>
+														)}
 													{policy.manualFields.specificConditions && (
 														<div className="text-green-700 font-medium">
 															✓ Condiciones: {policy.manualFields.specificConditions}
