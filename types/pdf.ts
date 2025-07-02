@@ -25,14 +25,16 @@ export interface PolicyForLetter {
 	company: string;
 	branch: string;
 	insuredValue?: number;
-	premium?: number;
+	premium?: number; // This is the original premium from the Excel file
 	insuredMatter?: string;
 	// Campos que el ejecutivo debe completar manualmente
 	manualFields?: {
 		specificConditions?: string;
 		deductibles?: string;
 		territoriality?: string;
-		renewalPremium?: number;
+		renewalPremium?: number; // Keep this for health template specific logic if needed, but 'premium' will be the primary editable field
+		premium?: number; // Editable premium field for both templates
+		originalPremium?: number; // Store the original premium from Excel for reference
 		coinsurance?: string;
 	};
 }

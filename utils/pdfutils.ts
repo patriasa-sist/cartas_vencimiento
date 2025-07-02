@@ -78,9 +78,12 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			company: record.compania,
 			branch: record.ramo,
 			insuredValue: record.valorAsegurado,
-			premium: record.prima,
+			premium: record.prima, // Original premium from Excel
 			insuredMatter: record.materiaAsegurada,
-			manualFields: {}, // El ejecutivo completará estos campos
+			manualFields: {
+				premium: record.prima, // Initialize editable premium with original value
+				originalPremium: record.prima, // Store original premium for reference
+			},
 		}));
 
 		// Detectar datos faltantes que el ejecutivo debe completar
@@ -99,7 +102,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			},
 			policies,
 			executive: firstRecord.ejecutivo,
-			needsReview: missingData.length > 0 || templateType === "general",
+			needsReview: missingData.length > 0 || templateType === "general", // General templates always need review for specific conditions
 			missingData,
 		};
 	});
@@ -114,29 +117,34 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 	policies.forEach((policy, index) => {
 		const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
-		if (!policy.insuredValue || policy.insuredValue === 0) {
-			missing.push(`${policyLabel}: Valor asegurado`);
-		}
-
-		if (!policy.premium || policy.premium === 0) {
+		// Check for premium in manualFields first, then original premium
+		if (!policy.manualFields?.premium || policy.manualFields.premium === 0) {
 			missing.push(`${policyLabel}: Prima`);
 		}
 
 		if (templateType === "general") {
-			// Para template general necesitamos más datos específicos
-			missing.push(`${policyLabel}: Condiciones específicas (deducibles, coaseguro, etc.)`);
+			// For general template, specific conditions are always expected to be filled manually
+			if (!policy.manualFields?.specificConditions) {
+				missing.push(`${policyLabel}: Condiciones específicas (deducibles, coaseguro, etc.)`);
+			}
 
+			// Check for territoriality if applicable (e.g., auto, CTI, transport)
 			if (
-				policy.branch.toLowerCase().includes("auto") ||
-				policy.branch.toLowerCase().includes("cti") ||
-				policy.branch.toLowerCase().includes("transporte")
+				(policy.branch.toLowerCase().includes("auto") ||
+					policy.branch.toLowerCase().includes("cti") ||
+					policy.branch.toLowerCase().includes("transporte")) &&
+				!policy.manualFields?.territoriality
 			) {
 				missing.push(`${policyLabel}: Información de extraterritorialidad`);
 			}
 		}
 
 		if (templateType === "salud") {
-			missing.push(`${policyLabel}: Prima de renovación anual`);
+			// For health template, renewal premium is expected
+			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium === 0) {
+				missing.push(`${policyLabel}: Prima de renovación anual`);
+			}
+			// This check is more of a reminder, not a strict missing field
 			missing.push(`${policyLabel}: Verificar cobertura COVID`);
 		}
 	});
@@ -242,7 +250,7 @@ export function validateRecordForPDF(record: ProcessedInsuranceRecord): { valid:
  * Formatea moneda boliviana
  */
 export function formatCurrency(amount: number): string {
-	if (!amount || amount === 0) return "No especificado";
+	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 
 	return new Intl.NumberFormat("es-BO", {
 		style: "currency",
@@ -255,7 +263,7 @@ export function formatCurrency(amount: number): string {
  * Formatea moneda USD (para valores asegurados)
  */
 export function formatUSD(amount: number): string {
-	if (!amount || amount === 0) return "No especificado";
+	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",

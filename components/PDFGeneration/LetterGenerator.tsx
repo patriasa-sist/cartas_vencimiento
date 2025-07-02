@@ -29,6 +29,7 @@ import {
 	generateFileName,
 	formatUSD,
 	formatCurrency,
+	determineTemplateType, // Import determineTemplateType
 } from "@/utils/pdfutils";
 import { pdf } from "@react-pdf/renderer";
 import { HealthTemplate } from "./HealthTemplate";
@@ -54,35 +55,37 @@ function NumericInput({ value, onChange, placeholder, className, label }: Numeri
 	const [displayValue, setDisplayValue] = useState(String(value || ""));
 
 	useEffect(() => {
+		// Update display value when the prop 'value' changes externally
 		setDisplayValue(String(value || ""));
 	}, [value]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const input = e.target.value;
-		// Permitir solo números y punto decimal
+		// Allow only numbers and a single decimal point
 		const numericValue = input.replace(/[^0-9.]/g, "");
-		// Evitar múltiples puntos decimales
 		const parts = numericValue.split(".");
 		const cleanValue = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : numericValue;
 
 		setDisplayValue(cleanValue);
-		// Convertir a número y llamar onChange
+		// Convert to number and call onChange
 		const numValue = parseFloat(cleanValue);
 		if (!isNaN(numValue) && numValue >= 0) {
 			onChange(numValue);
 		} else if (cleanValue === "" || cleanValue === ".") {
-			onChange(0);
+			// Allow empty string or just a decimal point for partial input
+			onChange(0); // Or handle as null/undefined if preferred for empty input
 		}
 	};
 
 	const handleBlur = () => {
-		// Formatear el valor cuando se pierde el foco
+		// Format the value when focus is lost
 		const numValue = parseFloat(displayValue);
 		if (!isNaN(numValue)) {
+			// Ensure it's a valid number before setting it
 			setDisplayValue(numValue.toString());
 		} else {
 			setDisplayValue("");
-			onChange(0);
+			onChange(0); // Reset to 0 or null if invalid
 		}
 	};
 
@@ -131,7 +134,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	const [previewLetter, setPreviewLetter] = useState<string | null>(null);
 	const [generationResult, setGenerationResult] = useState<PDFGenerationResult | null>(null);
 
-	// Preparar cartas basándose en los registros seleccionados
+	// Prepare letters based on selected records
 	const preparedLetters = useMemo(() => {
 		const validRecords: ProcessedInsuranceRecord[] = [];
 		const validationErrors: string[] = [];
@@ -154,14 +157,14 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		};
 	}, [selectedRecords]);
 
-	// Inicializar cartas una sola vez
+	// Initialize letters once
 	useEffect(() => {
 		if (preparedLetters.letters.length > 0 && letters.length === 0) {
 			setLetters(preparedLetters.letters);
 		}
 	}, [preparedLetters.letters, letters.length]);
 
-	// Estadísticas
+	// Stats
 	const stats = useMemo(() => {
 		const saludCount = letters.filter((l) => l.templateType === "salud").length;
 		const generalCount = letters.filter((l) => l.templateType === "general").length;
@@ -177,13 +180,13 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		};
 	}, [letters]);
 
-	// Actualizar datos de una carta
+	// Update letter data
 	const updateLetterData = (letterId: string, updates: Partial<LetterData>) => {
 		setLetters((prev) => {
 			const updated = prev.map((letter) => {
 				if (letter.id === letterId) {
 					const updatedLetter = { ...letter, ...updates };
-					// Recalcular needsReview y missingData después de actualizar
+					// Recalculate needsReview and missingData after updating
 					updatedLetter.needsReview = calculateNeedsReview(updatedLetter);
 					updatedLetter.missingData = calculateMissingData(updatedLetter);
 					return updatedLetter;
@@ -194,34 +197,45 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		});
 	};
 
-	// Función para calcular si necesita revisión
+	// Function to calculate if a letter needs review
 	const calculateNeedsReview = (letter: LetterData): boolean => {
-		return letter.policies.some((policy) => {
-			if (letter.templateType === "salud") {
-				return !policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0;
-			}
-			if (letter.templateType === "general") {
-				return (
-					!policy.manualFields?.deductibles ||
-					!policy.manualFields?.territoriality ||
-					!policy.manualFields?.specificConditions
-				);
-			}
-			return false;
-		});
+		// A letter needs review if any of its policies have missing manual fields
+		return (
+			letter.policies.some((policy) => {
+				// For health template, check renewalPremium
+				if (letter.templateType === "salud") {
+					return !policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0;
+				}
+				// For general template, check specificConditions, deductibles, and territoriality
+				if (letter.templateType === "general") {
+					return (
+						!policy.manualFields?.specificConditions ||
+						!policy.manualFields?.deductibles ||
+						!policy.manualFields?.territoriality
+					);
+				}
+				return false;
+			}) || letter.missingData.length > 0
+		); // Also needs review if there are general missing data from excel
 	};
 
-	// Función para calcular datos faltantes dinámicamente
+	// Function to calculate missing data dynamically
 	const calculateMissingData = (letter: LetterData): string[] => {
 		const missing: string[] = [];
 
 		letter.policies.forEach((policy, index) => {
 			const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
+			// Check for premium. If original premium was 0 or not provided, and editable premium is still 0/not provided
+			if (!policy.manualFields?.premium || policy.manualFields.premium === 0) {
+				missing.push(`${policyLabel}: Prima`);
+			}
+
 			if (letter.templateType === "salud") {
 				if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
 					missing.push(`${policyLabel}: Prima de renovación anual`);
 				}
+				missing.push(`${policyLabel}: Verificar cobertura COVID`); // This is a reminder, not a strict missing field
 			}
 
 			if (letter.templateType === "general") {
@@ -240,14 +254,14 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		return missing;
 	};
 
-	// Generar PDF para una carta específica
+	// Generate PDF for a specific letter
 	const generateSinglePDF = async (letterData: LetterData): Promise<Blob> => {
 		const TemplateComponent = letterData.templateType === "salud" ? HealthTemplate : GeneralTemplate;
 		const pdfBlob = await pdf(<TemplateComponent letterData={letterData} />).toBlob();
 		return pdfBlob;
 	};
 
-	// Preview de una carta
+	// Preview a letter
 	const handlePreview = async (letterId: string) => {
 		setPreviewLetter(letterId);
 		const letter = letters.find((l) => l.id === letterId);
@@ -264,7 +278,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		setPreviewLetter(null);
 	};
 
-	// Descargar carta individual
+	// Download individual letter
 	const handleDownloadSingle = async (letterId: string) => {
 		const letter = letters.find((l) => l.id === letterId);
 		if (!letter) return;
@@ -290,7 +304,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		}
 	};
 
-	// Generar y descargar todas las cartas como ZIP
+	// Generate and download all letters as ZIP
 	const handleDownloadAll = async () => {
 		try {
 			setIsGenerating(true);
@@ -416,7 +430,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</Card>
 			</div>
 
-			{/* Errores de validación */}
+			{/* Validation errors */}
 			{preparedLetters.validationErrors.length > 0 && (
 				<Alert className="border-yellow-200 bg-yellow-50">
 					<AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -436,7 +450,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</Alert>
 			)}
 
-			{/* Lista de cartas */}
+			{/* List of letters */}
 			<div className="space-y-4">
 				{letters.map((letter) => (
 					<LetterCard
@@ -458,7 +472,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				))}
 			</div>
 
-			{/* Resultado de generación */}
+			{/* Generation result */}
 			{generationResult && (
 				<Card className="border-green-200 bg-green-50">
 					<CardContent className="p-4">
@@ -482,7 +496,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	);
 }
 
-// Componente para cada carta individual
+// Component for each individual letter
 interface LetterCardProps {
 	letter: LetterData;
 	isEditing: boolean;
@@ -508,10 +522,10 @@ function LetterCard({
 	onDownload,
 	onUpdateLetterData,
 }: LetterCardProps) {
-	// Estado local sincronizado con props
+	// Local state synchronized with props
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
 
-	// Sincronizar estado local con props cuando cambie la carta
+	// Synchronize local state with props when the letter changes
 	useEffect(() => {
 		setEditedLetter(letter);
 	}, [letter]);
@@ -520,27 +534,29 @@ function LetterCard({
 		onSaveEdit(editedLetter);
 	};
 
-	// Función para actualizar póliza individual con tipado correcto
+	// Function to update individual policy with correct typing
 	const updatePolicy = (policyIndex: number, field: string, value: any) => {
-		const updatedLetter = {
+		const updatedPolicies = editedLetter.policies.map((policy, index) =>
+			index === policyIndex
+				? {
+						...policy,
+						manualFields: {
+							...policy.manualFields,
+							[field]: value,
+						},
+				  }
+				: policy
+		);
+
+		const updatedLetterData = {
 			...editedLetter,
-			policies: editedLetter.policies.map((policy, index) =>
-				index === policyIndex
-					? {
-							...policy,
-							manualFields: {
-								...policy.manualFields,
-								[field]: value,
-							},
-					  }
-					: policy
-			),
+			policies: updatedPolicies,
 		};
 
-		setEditedLetter(updatedLetter);
+		setEditedLetter(updatedLetterData);
 
-		// Actualizar inmediatamente en el estado padre para feedback visual
-		onUpdateLetterData(letter.id, updatedLetter);
+		// Update immediately in the parent state for visual feedback
+		onUpdateLetterData(letter.id, updatedLetterData);
 	};
 
 	const getTemplateIcon = (type: "salud" | "general") => {
@@ -632,7 +648,7 @@ function LetterCard({
 			</CardHeader>
 
 			<CardContent>
-				{/* Información del cliente */}
+				{/* Client Information */}
 				<div className="mb-4 p-3 bg-white rounded border">
 					<h4 className="font-medium text-gray-900 mb-2">Información del Cliente</h4>
 					<div className="grid grid-cols-2 gap-4 text-sm">
@@ -645,7 +661,7 @@ function LetterCard({
 					</div>
 				</div>
 
-				{/* Lista de pólizas */}
+				{/* Policy List */}
 				<div className="space-y-3">
 					<h4 className="font-medium text-gray-900">Pólizas ({letter.policies.length})</h4>
 
@@ -665,14 +681,27 @@ function LetterCard({
 										{policy.insuredValue ? formatUSD(policy.insuredValue) : "No especificado"}
 									</div>
 									<div className="text-gray-600">
-										Prima: {policy.premium ? formatCurrency(policy.premium) : "No especificado"}
+										Prima Original:{" "}
+										{policy.manualFields?.originalPremium
+											? formatCurrency(policy.manualFields.originalPremium)
+											: "No especificado"}
 									</div>
 								</div>
 
-								{/* Campos editables mejorados */}
+								{/* Improved Editable Fields */}
 								<div className="space-y-2">
 									{isEditing && (
 										<>
+											{/* Editable Premium for both templates */}
+											<NumericInput
+												label="Prima (editable):"
+												value={policy.manualFields?.premium || 0}
+												onChange={(value) => updatePolicy(index, "premium", value)}
+												placeholder="0.00"
+												className="text-xs h-8"
+											/>
+
+											{/* Health-specific renewal premium */}
 											{letter.templateType === "salud" && (
 												<NumericInput
 													label="Prima renovación (USD):"
@@ -683,6 +712,7 @@ function LetterCard({
 												/>
 											)}
 
+											{/* General-specific fields */}
 											{letter.templateType === "general" && (
 												<>
 													<div>
@@ -726,14 +756,26 @@ function LetterCard({
 										</>
 									)}
 
-									{/* Mostrar datos guardados con mejor formato */}
+									{/* Display saved data with better formatting */}
 									{!isEditing && policy.manualFields && (
 										<div className="text-xs space-y-1">
-											{letter.templateType === "salud" && policy.manualFields.renewalPremium && (
-												<div className="text-green-700 font-medium">
-													✓ Prima: {formatUSD(policy.manualFields.renewalPremium)}
-												</div>
-											)}
+											{/* Display editable premium */}
+											{policy.manualFields.premium !== undefined &&
+												policy.manualFields.premium !== null && (
+													<div className="text-green-700 font-medium">
+														✓ Prima (editable):{" "}
+														{formatCurrency(policy.manualFields.premium)}
+													</div>
+												)}
+
+											{letter.templateType === "salud" &&
+												policy.manualFields.renewalPremium !== undefined &&
+												policy.manualFields.renewalPremium !== null && (
+													<div className="text-green-700 font-medium">
+														✓ Prima renovación:{" "}
+														{formatUSD(policy.manualFields.renewalPremium)}
+													</div>
+												)}
 											{letter.templateType === "general" && (
 												<>
 													{policy.manualFields.deductibles && (
@@ -758,7 +800,7 @@ function LetterCard({
 								</div>
 							</div>
 
-							{/* Materia asegurada */}
+							{/* Insured Matter */}
 							{policy.insuredMatter && (
 								<div className="mt-2 pt-2 border-t border-gray-200">
 									<div className="text-xs text-gray-600">
@@ -770,7 +812,7 @@ function LetterCard({
 					))}
 				</div>
 
-				{/* Datos faltantes actualizados dinámicamente */}
+				{/* Dynamically updated missing data */}
 				{letter.missingData.length > 0 && (
 					<div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
 						<div className="flex items-center mb-2">
@@ -786,7 +828,7 @@ function LetterCard({
 					</div>
 				)}
 
-				{/* Mensaje cuando todos los datos están completos */}
+				{/* Message when all data is complete */}
 				{!letter.needsReview && (
 					<div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
 						<div className="flex items-center">
@@ -798,7 +840,7 @@ function LetterCard({
 					</div>
 				)}
 
-				{/* Ejecutivo responsable */}
+				{/* Responsible Executive */}
 				<div className="mt-4 pt-3 border-t border-gray-200 text-sm text-gray-600">
 					<span className="font-medium">Ejecutivo:</span> {letter.executive}
 				</div>

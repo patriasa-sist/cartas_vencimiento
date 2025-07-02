@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { BaseTemplate } from "./BaseTemplate";
 import { LetterData } from "@/types/pdf";
-import { formatUSD } from "@/utils/pdfutils";
+import { formatUSD, formatCurrency } from "@/utils/pdfutils"; // Import formatCurrency
 
 const generalStyles = StyleSheet.create({
 	policyTable: {
@@ -100,11 +100,20 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 					<View style={[generalStyles.tableHeaderCol, { width: "20%" }]}>
 						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "25%" }]}>
+					<View style={[generalStyles.tableHeaderCol, { width: "20%" }]}>
+						{" "}
+						{/* Adjusted width for Ramo */}
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "25%" }]}>
+					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+						{" "}
+						{/* Adjusted width for Valor Asegurado */}
 						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
+					</View>
+					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+						{" "}
+						{/* Added Prima column */}
+						<Text style={generalStyles.headerText}>PRIMA</Text>
 					</View>
 				</View>
 
@@ -120,12 +129,25 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 						<View style={[generalStyles.tableCol, { width: "20%" }]}>
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "25%" }]}>
+						<View style={[generalStyles.tableCol, { width: "20%" }]}>
+							{" "}
+							{/* Adjusted width for Ramo */}
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "25%" }]}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+							{" "}
+							{/* Adjusted width for Valor Asegurado */}
 							<Text style={generalStyles.cellText}>
 								{policy.insuredValue ? formatUSD(policy.insuredValue) : "No especificado"}
+							</Text>
+						</View>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+							{" "}
+							{/* Added Prima column */}
+							<Text style={generalStyles.cellText}>
+								{policy.manualFields?.premium
+									? formatCurrency(policy.manualFields.premium)
+									: "No especificado"}
 							</Text>
 						</View>
 					</View>
