@@ -97,7 +97,6 @@ const healthStyles = StyleSheet.create({
 		minHeight: 25,
 		verticalAlign: "middle",
 	},
-	// Estilo para las celdas de datos
 	tableCell: {
 		padding: 5,
 		fontSize: 9,
@@ -115,6 +114,11 @@ const healthStyles = StyleSheet.create({
 		marginTop: 5,
 		fontSize: 8,
 		fontStyle: "italic",
+	},
+	// Estilo específico para la celda de número de póliza
+	policyNumberCellText: {
+		fontSize: 7, // Tamaño de fuente más pequeño para números de póliza largos
+		textAlign: "center",
 	},
 });
 
@@ -151,7 +155,8 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 								<Text>{policy.expiryDate}</Text>
 							</View>
 							<View style={[healthStyles.tableCell, { width: "25%" }]}>
-								<Text>{policy.policyNumber}</Text>
+								{/* Usar estilo específico para número de póliza */}
+								<Text style={healthStyles.policyNumberCellText}>{policy.policyNumber}</Text>
 							</View>
 							<View style={[healthStyles.tableCell, { width: "25%" }]}>
 								<Text>{policy.company}</Text>

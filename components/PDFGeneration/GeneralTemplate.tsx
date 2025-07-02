@@ -11,12 +11,12 @@ const generalStyles = StyleSheet.create({
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#e5e7eb",
-		marginBottom: 15, // Antes 20
+		marginBottom: 15,
 	},
 	tableRow: {
 		flexDirection: "row",
 	},
-	// Estilo para las celdas de datos
+	// Estilo para las celdas de datos y encabezado, ahora con anchos explícitos
 	tableCol: {
 		borderStyle: "solid",
 		borderWidth: 1,
@@ -24,27 +24,30 @@ const generalStyles = StyleSheet.create({
 		borderTopWidth: 0,
 		borderColor: "#e5e7eb",
 		padding: 5,
-		flex: 1, // Usa flex para distribución uniforme
-		textAlign: "center", // Centra el texto en las celdas de datos
+		// No usamos flex: 1 aquí, en su lugar, definiremos el ancho directamente en las celdas
+		textAlign: "center", // Centra el texto
 		justifyContent: "center", // Centra el contenido verticalmente
 		alignItems: "center", // Centra el contenido horizontalmente
 	},
-	// Estilo para las celdas del encabezado (ahora idéntico a tableCol, excepto por el texto)
-	// No hay un estilo 'tableHeaderCol' separado en la definición, se usará 'tableCol' directamente en JSX
 	headerText: {
 		fontWeight: "bold",
 		fontSize: 8,
-		textAlign: "center", // Asegura que el texto del encabezado esté centrado
-		color: "#1f2937", // Color de texto primario
+		textAlign: "center",
+		color: "#1f2937",
 	},
 	cellText: {
 		fontSize: 8,
-		textAlign: "center", // Asegura que el texto de la celda esté centrado
+		textAlign: "center",
+	},
+	// Estilos específicos para celdas con contenido potencialmente largo
+	policyNumberCellText: {
+		fontSize: 7, // Tamaño de fuente más pequeño para números de póliza largos
+		textAlign: "center",
 	},
 	conditionsBox: {
 		backgroundColor: "#f8f9fa",
-		padding: 8, // Antes 10
-		marginTop: 10, // Antes 15
+		padding: 8,
+		marginTop: 10,
 		borderWidth: 1,
 		borderColor: "#dee2e6",
 		borderRadius: 4,
@@ -86,7 +89,6 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 			return "No especificado";
 		}
 		let formattedValue: string;
-		// Use es-BO locale for consistent thousands (dot) and decimal (comma) separators
 		const numberFormatter = new Intl.NumberFormat("es-BO", {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
@@ -99,7 +101,7 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 		} else if (currency === "$us.") {
 			return `$us. ${formattedValue}`;
 		}
-		return value.toString(); // Fallback if currency is not specified
+		return value.toString();
 	};
 
 	return (
@@ -107,24 +109,25 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 			{/* Policy Table */}
 			<View style={generalStyles.policyTable}>
 				{/* Table Header */}
-				{/* La fila del encabezado usa generalStyles.tableRow y las celdas generalStyles.tableCol */}
 				<View style={generalStyles.tableRow}>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>FECHA DE VENCIMIENTO</Text>
 					</View>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "25%" }]}>
+						{" "}
+						{/* Ancho aumentado para No. de Póliza */}
 						<Text style={generalStyles.headerText}>No. DE PÓLIZA</Text>
 					</View>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
 					</View>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
 					</View>
-					<View style={generalStyles.tableCol}>
+					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>PRIMA</Text>
 					</View>
 				</View>
@@ -132,26 +135,29 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 				{/* Policy Rows */}
 				{letterData.policies.map((policy, index) => (
 					<View key={index} style={generalStyles.tableRow}>
-						<View style={generalStyles.tableCol}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.expiryDate}</Text>
 						</View>
-						<View style={generalStyles.tableCol}>
-							<Text style={generalStyles.cellText}>{policy.policyNumber}</Text>
+						<View style={[generalStyles.tableCol, { width: "25%" }]}>
+							{" "}
+							{/* Ancho aumentado para No. de Póliza */}
+							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text>{" "}
+							{/* Usar estilo específico */}
 						</View>
-						<View style={generalStyles.tableCol}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
 						</View>
-						<View style={generalStyles.tableCol}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
-						<View style={generalStyles.tableCol}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>
 								{policy.manualFields?.insuredValue
 									? formatUSD(policy.manualFields.insuredValue)
 									: "No especificado"}
 							</Text>
 						</View>
-						<View style={generalStyles.tableCol}>
+						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>
 								{policy.manualFields?.premium
 									? formatCurrency(policy.manualFields.premium)
@@ -177,78 +183,57 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 				</View>
 			)}
 
-			{/* Condiciones Específicas (para completar manualmente) */}
-			<View style={generalStyles.conditionsBox}>
-				<Text style={generalStyles.conditionsTitle}>CONDICIONES ESPECÍFICAS:</Text>
-
-				{letterData.policies.some(
-					(p) => p.manualFields?.deductibles !== undefined && p.manualFields?.deductibles !== null
-				) ? (
-					letterData.policies.map(
-						(policy, index) =>
-							policy.manualFields?.deductibles !== undefined &&
-							policy.manualFields?.deductibles !== null && (
-								<Text key={index} style={generalStyles.conditionText}>
-									• Deducible coaseguro:{" "}
-									{formatMonetaryValue(
-										policy.manualFields.deductibles,
-										policy.manualFields.deductiblesCurrency
-									)}
+			{/* Materia Asegurada y Condiciones Específicas */}
+			{letterData.policies.some(
+				(p) =>
+					p.insuredMatter ||
+					p.manualFields?.deductibles !== undefined ||
+					p.manualFields?.territoriality !== undefined ||
+					p.manualFields?.specificConditions
+			) && (
+				<View style={generalStyles.conditionsBox}>
+					<Text style={generalStyles.conditionsTitle}>DETALLE DE LA PÓLIZA:</Text>
+					{letterData.policies.map((policy, index) => (
+						<View key={index}>
+							<Text style={generalStyles.conditionText}>
+								<Text style={{ fontWeight: "bold" }}>Póliza {policy.policyNumber}:</Text>
+							</Text>
+							{policy.insuredMatter && (
+								<Text style={generalStyles.conditionText}>
+									• Materia Asegurada: {policy.insuredMatter}
 								</Text>
-							)
-					)
-				) : (
-					<View style={generalStyles.missingDataBox}>
-						<Text style={generalStyles.missingDataText}>
-							⚠️ COMPLETAR: Información sobre deducibles y coaseguro
-						</Text>
-					</View>
-				)}
-
-				{letterData.policies.some(
-					(p) => p.manualFields?.territoriality !== undefined && p.manualFields?.territoriality !== null
-				) ? (
-					letterData.policies.map(
-						(policy, index) =>
-							policy.manualFields?.territoriality !== undefined &&
-							policy.manualFields?.territoriality !== null && (
-								<Text key={index} style={generalStyles.conditionText}>
-									• Extraterritorialidad:{" "}
-									{formatMonetaryValue(
-										policy.manualFields.territoriality,
-										policy.manualFields.territorialityCurrency
-									)}
+							)}
+							{policy.manualFields?.deductibles !== undefined &&
+								policy.manualFields?.deductibles !== null && (
+									<Text style={generalStyles.conditionText}>
+										• Deducible coaseguro:{" "}
+										{formatMonetaryValue(
+											policy.manualFields.deductibles,
+											policy.manualFields.deductiblesCurrency
+										)}
+									</Text>
+								)}
+							{policy.manualFields?.territoriality !== undefined &&
+								policy.manualFields?.territoriality !== null && (
+									<Text style={generalStyles.conditionText}>
+										• Extraterritorialidad:{" "}
+										{formatMonetaryValue(
+											policy.manualFields.territoriality,
+											policy.manualFields.territorialityCurrency
+										)}
+									</Text>
+								)}
+							{policy.manualFields?.specificConditions && (
+								<Text style={generalStyles.conditionText}>
+									• Condiciones Específicas: {policy.manualFields.specificConditions}
 								</Text>
-							)
-					)
-				) : (
-					<View style={generalStyles.missingDataBox}>
-						<Text style={generalStyles.missingDataText}>
-							⚠️ COMPLETAR: Información sobre extraterritorialidad (si aplica)
-						</Text>
-					</View>
-				)}
+							)}
+						</View>
+					))}
+				</View>
+			)}
 
-				{/* Specific Conditions Textarea Content */}
-				{letterData.policies.some((p) => p.manualFields?.specificConditions) ? (
-					letterData.policies.map(
-						(policy, index) =>
-							policy.manualFields?.specificConditions && (
-								<Text key={index} style={generalStyles.conditionText}>
-									• {policy.manualFields.specificConditions}
-								</Text>
-							)
-					)
-				) : (
-					<View style={generalStyles.missingDataBox}>
-						<Text style={generalStyles.missingDataText}>
-							⚠️ COMPLETAR: Condiciones específicas adicionales
-						</Text>
-					</View>
-				)}
-			</View>
-
-			{/* Missing Data Summary */}
+			{/* Missing Data Summary (This section will likely be empty if all manual fields are filled) */}
 			{letterData.missingData.length > 0 && (
 				<View style={generalStyles.missingDataBox}>
 					<Text style={generalStyles.missingDataText}>DATOS FALTANTES PARA COMPLETAR MANUALMENTE:</Text>
