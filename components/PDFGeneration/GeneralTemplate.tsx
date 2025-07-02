@@ -225,7 +225,8 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 								)}
 							{policy.manualFields?.specificConditions && (
 								<Text style={generalStyles.conditionText}>
-									• Condiciones Específicas: {policy.manualFields.specificConditions}
+									• Condiciones Específicas:{"\n"}
+									{policy.manualFields.specificConditions}
 								</Text>
 							)}
 						</View>
