@@ -78,7 +78,6 @@ const healthStyles = StyleSheet.create({
 		color: "#6b7280",
 	},
 	table: {
-		display: "table",
 		width: "100%",
 		borderStyle: "solid",
 		borderWidth: 1,
@@ -98,23 +97,7 @@ const healthStyles = StyleSheet.create({
 		minHeight: 25,
 		verticalAlign: "middle",
 	},
-	tableHeaderCell: {
-		backgroundColor: "#f0f0f0",
-		fontWeight: "bold",
-		padding: 5,
-		fontSize: 9,
-		borderRightWidth: 1,
-		borderRightColor: "#000",
-		borderRightStyle: "solid",
-		textAlign: "center",
-	},
-	tableHeaderCellLast: {
-		backgroundColor: "#f0f0f0",
-		fontWeight: "bold",
-		padding: 5,
-		fontSize: 9,
-		textAlign: "center",
-	},
+	// Estilo para las celdas de datos
 	tableCell: {
 		padding: 5,
 		fontSize: 9,
@@ -145,62 +128,44 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 			<View style={healthStyles.policyTable}>
 				{letterData.policies.map((policy, policyIndex) => (
 					<View key={policyIndex} style={{ marginBottom: 15 }}>
-						<View style={healthStyles.table}>
-							{/* Header Row */}
-							<View style={healthStyles.tableRow}>
-								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
-									<Text>FECHA DE VENCIMIENTO</Text>
-								</View>
-								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
-									<Text>No. DE PÓLIZA</Text>
-								</View>
-								<View style={[healthStyles.tableHeaderCell, { width: "25%" }]}>
-									<Text>COMPAÑÍA</Text>
-								</View>
-								<View style={[healthStyles.tableHeaderCellLast, { width: "25%" }]}>
-									<Text>RAMO</Text>
-								</View>
+						{/* Header Row - Usamos tableRow para la fila del encabezado */}
+						<View style={healthStyles.tableRow}>
+							{/* Las celdas del encabezado usan tableCell y tableCellLast */}
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text style={{ fontWeight: "bold", color: "#1f2937" }}>FECHA DE VENCIMIENTO</Text>
 							</View>
-
-							{/* Data Row */}
-							<View style={healthStyles.tableRowNoBottom}>
-								<View style={[healthStyles.tableCell, { width: "25%" }]}>
-									<Text>{policy.expiryDate}</Text>
-								</View>
-								<View style={[healthStyles.tableCell, { width: "25%" }]}>
-									<Text>{policy.policyNumber}</Text>
-								</View>
-								<View style={[healthStyles.tableCell, { width: "25%" }]}>
-									<Text>{policy.company}</Text>
-								</View>
-								<View style={[healthStyles.tableCellLast, { width: "25%" }]}>
-									<Text>{policy.branch}</Text>
-									{policy.branch.toLowerCase().includes("covid") && (
-										<Text style={healthStyles.covidInfo}>
-											({policy.branch.toLowerCase().includes("sin") ? "Sin" : "Con"} cobertura
-											covid)
-										</Text>
-									)}
-								</View>
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text style={{ fontWeight: "bold", color: "#1f2937" }}>No. DE PÓLIZA</Text>
+							</View>
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text style={{ fontWeight: "bold", color: "#1f2937" }}>COMPAÑÍA</Text>
+							</View>
+							<View style={[healthStyles.tableCellLast, { width: "25%" }]}>
+								<Text style={{ fontWeight: "bold", color: "#1f2937" }}>RAMO</Text>
 							</View>
 						</View>
 
-						{/* Lista de Asegurados */}
-						<View style={healthStyles.aseguradosSection}>
-							<Text style={healthStyles.aseguradosTitle}>Asegurados.</Text>
-							<Text style={healthStyles.aseguradoName}>{letterData.client.name.toUpperCase()}</Text>
-
-							{/* Si es la póliza de VILLEGAS ORELLANA, GONZALO, mostrar asegurados adicionales */}
-							{letterData.client.name.includes("VILLEGAS") && (
-								<>
-									<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, ADRIAN</Text>
-									<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, NOAH</Text>
-									<Text style={healthStyles.aseguradoName}>SAGARNAGA FOREST, RAISA VIVIANA</Text>
-								</>
-							)}
+						{/* Data Row */}
+						<View style={healthStyles.tableRowNoBottom}>
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text>{policy.expiryDate}</Text>
+							</View>
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text>{policy.policyNumber}</Text>
+							</View>
+							<View style={[healthStyles.tableCell, { width: "25%" }]}>
+								<Text>{policy.company}</Text>
+							</View>
+							<View style={[healthStyles.tableCellLast, { width: "25%" }]}>
+								<Text>{policy.branch}</Text>
+								{policy.branch.toLowerCase().includes("covid") && (
+									<Text style={healthStyles.covidInfo}>
+										({policy.branch.toLowerCase().includes("sin") ? "Sin" : "Con"} cobertura covid)
+									</Text>
+								)}
+							</View>
 						</View>
-
-						{/* Prima de Renovación */}
+						{/* Prima de Renovación - Ahora dentro del map de policies */}
 						{policy.manualFields?.renewalPremium ? (
 							<View style={healthStyles.renewalPremium}>
 								<Text style={healthStyles.renewalText}>
@@ -216,6 +181,21 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 						)}
 					</View>
 				))}
+			</View>
+
+			{/* Lista de Asegurados */}
+			<View style={healthStyles.aseguradosSection}>
+				<Text style={healthStyles.aseguradosTitle}>Asegurados.</Text>
+				<Text style={healthStyles.aseguradoName}>{letterData.client.name.toUpperCase()}</Text>
+
+				{/* Si es la póliza de VILLEGAS ORELLANA, GONZALO, mostrar asegurados adicionales */}
+				{letterData.client.name.includes("VILLEGAS") && (
+					<>
+						<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, ADRIAN</Text>
+						<Text style={healthStyles.aseguradoName}>VILLEGAS SAGARNAGA, NOAH</Text>
+						<Text style={healthStyles.aseguradoName}>SAGARNAGA FOREST, RAISA VIVIANA</Text>
+					</>
+				)}
 			</View>
 		</BaseTemplate>
 	);

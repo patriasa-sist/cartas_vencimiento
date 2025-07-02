@@ -68,8 +68,8 @@ const styles = StyleSheet.create({
 		fontSize: 10,
 	},
 	content: {
-		flex: 1,
-		marginBottom: 20,
+		// Eliminado flex: 1 para evitar que consuma todo el espacio disponible y cause saltos de página prematuros.
+		marginBottom: 20, // Mantener un margen en la parte inferior.
 	},
 	paragraph: {
 		marginBottom: 10,

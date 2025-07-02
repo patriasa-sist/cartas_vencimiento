@@ -8,7 +8,6 @@ import { formatUSD, formatCurrency } from "@/utils/pdfutils"; // Import formatCu
 const generalStyles = StyleSheet.create({
 	policyTable: {
 		width: "100%",
-		// Removed display: "table" due to @react-pdf/renderer compatibility issues
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#e5e7eb",
@@ -17,9 +16,7 @@ const generalStyles = StyleSheet.create({
 	tableRow: {
 		flexDirection: "row",
 	},
-	tableHeaderRow: {
-		backgroundColor: "#172554",
-	},
+	// Estilo para las celdas de datos
 	tableCol: {
 		borderStyle: "solid",
 		borderWidth: 1,
@@ -27,33 +24,22 @@ const generalStyles = StyleSheet.create({
 		borderTopWidth: 0,
 		borderColor: "#e5e7eb",
 		padding: 5,
-		flex: 1, // Use flex for distribution
-		textAlign: "center", // Center align text in data cells
-		justifyContent: "center", // Center content vertically
-		alignItems: "center", // Center content horizontally
+		flex: 1, // Usa flex para distribución uniforme
+		textAlign: "center", // Centra el texto en las celdas de datos
+		justifyContent: "center", // Centra el contenido verticalmente
+		alignItems: "center", // Centra el contenido horizontalmente
 	},
-	tableHeaderCol: {
-		borderStyle: "solid",
-		borderWidth: 1,
-		borderLeftWidth: 0,
-		borderTopWidth: 0,
-		borderColor: "#e5e7eb",
-		padding: 5,
-		backgroundColor: "#172554",
-		flex: 1, // Use flex for distribution
-		textAlign: "center", // Center align text in header cells
-		justifyContent: "center", // Center content vertically
-		alignItems: "center", // Center content horizontally
-	},
+	// Estilo para las celdas del encabezado (ahora idéntico a tableCol, excepto por el texto)
+	// No hay un estilo 'tableHeaderCol' separado en la definición, se usará 'tableCol' directamente en JSX
 	headerText: {
-		color: "white",
-		fontSize: 8,
 		fontWeight: "bold",
-		textAlign: "center", // Ensure header text is centered
+		fontSize: 8,
+		textAlign: "center", // Asegura que el texto del encabezado esté centrado
+		color: "#1f2937", // Color de texto primario
 	},
 	cellText: {
 		fontSize: 8,
-		textAlign: "center", // Ensure cell text is centered
+		textAlign: "center", // Asegura que el texto de la celda esté centrado
 	},
 	conditionsBox: {
 		backgroundColor: "#f8f9fa",
@@ -121,23 +107,24 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 			{/* Policy Table */}
 			<View style={generalStyles.policyTable}>
 				{/* Table Header */}
-				<View style={generalStyles.tableHeaderRow}>
-					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+				{/* La fila del encabezado usa generalStyles.tableRow y las celdas generalStyles.tableCol */}
+				<View style={generalStyles.tableRow}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>FECHA DE VENCIMIENTO</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>No. DE PÓLIZA</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "20%" }]}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "20%" }]}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
 					</View>
-					<View style={[generalStyles.tableHeaderCol, { width: "15%" }]}>
+					<View style={generalStyles.tableCol}>
 						<Text style={generalStyles.headerText}>PRIMA</Text>
 					</View>
 				</View>
@@ -145,26 +132,26 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 				{/* Policy Rows */}
 				{letterData.policies.map((policy, index) => (
 					<View key={index} style={generalStyles.tableRow}>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>{policy.expiryDate}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>{policy.policyNumber}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "20%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "20%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>
 								{policy.manualFields?.insuredValue
 									? formatUSD(policy.manualFields.insuredValue)
 									: "No especificado"}
 							</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={generalStyles.tableCol}>
 							<Text style={generalStyles.cellText}>
 								{policy.manualFields?.premium
 									? formatCurrency(policy.manualFields.premium)
