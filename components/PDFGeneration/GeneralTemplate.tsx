@@ -11,7 +11,7 @@ const generalStyles = StyleSheet.create({
 		borderStyle: "solid",
 		borderWidth: 1,
 		borderColor: "#e5e7eb",
-		marginBottom: 15,
+		marginBottom: 10,
 	},
 	tableRow: {
 		flexDirection: "row",
@@ -31,7 +31,7 @@ const generalStyles = StyleSheet.create({
 	},
 	headerText: {
 		fontWeight: "bold",
-		fontSize: 9,
+		fontSize: 8,
 		textAlign: "center",
 		color: "#1f2937",
 	},
@@ -47,11 +47,9 @@ const generalStyles = StyleSheet.create({
 	conditionsBox: {
 		backgroundColor: "#f8f9fa",
 		padding: 8,
-		marginTop: 10,
 		marginBottom: 10,
 		borderWidth: 1,
 		borderColor: "#dee2e6",
-		borderRadius: 4,
 	},
 	conditionsTitle: {
 		fontSize: 10,
@@ -67,7 +65,7 @@ const generalStyles = StyleSheet.create({
 	missingDataBox: {
 		backgroundColor: "#fee2e2",
 		padding: 8,
-		marginTop: 10,
+		marginBottom: 10,
 		borderWidth: 1,
 		borderColor: "#fca5a5",
 		borderRadius: 4,

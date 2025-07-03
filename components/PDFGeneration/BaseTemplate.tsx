@@ -25,37 +25,35 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		flexDirection: "column",
-		alignItems: "center",
-		marginBottom: 15, // Antes 20
+		// alignItems: "center",
+		marginBottom: 10, // Antes 20
 	},
 	logo: {
-		width: 180,
-		marginBottom: 10,
+		width: 150,
+		marginBottom: 5,
 	},
 	headerText: {
 		fontSize: 10,
 		marginBottom: 5,
-		textAlign: "center",
+		textAlign: "left",
 	},
 	referenceNumber: {
 		fontSize: 10,
 		marginBottom: 5,
-		textAlign: "center",
+		textAlign: "left",
 	},
 	clientInfo: {
-		marginBottom: 15, // Antes 20
+		marginBottom: 10, // Antes 20
 	},
 	clientName: {
-		fontSize: 11,
+		fontSize: 10,
 		fontWeight: "bold",
-		marginBottom: 2,
 	},
 	clientDetails: {
 		fontSize: 10,
-		marginBottom: 2,
 	},
 	present: {
-		marginBottom: 10,
+		marginBottom: 5,
 	},
 	subject: {
 		fontSize: 11,
@@ -69,21 +67,19 @@ const styles = StyleSheet.create({
 		fontSize: 10,
 	},
 	content: {
-		marginBottom: 15, // Antes 20
+		marginBottom: 5, // Antes 20
 	},
 	paragraph: {
 		marginBottom: 10,
 		textAlign: "justify",
 	},
 	signature: {
-		marginTop: 20, // Antes 30
-		textAlign: "center",
-		fontSize: 10,
+		textAlign: "left",
 	},
 	signatureBlock: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginTop: 30, // Antes 40
+		marginTop: 10, // Antes 40
 		paddingHorizontal: 20,
 	},
 	signatureColumn: {
@@ -129,15 +125,15 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	footer: {
-		marginTop: 15, // Antes 20
-		fontSize: 8,
+		fontSize: 6,
 		borderTopWidth: 1,
 		borderTopColor: "#e5e7eb",
-		paddingTop: 10,
+		paddingTop: 5,
+		marginBottom: 0,
 	},
 	footerText: {
-		fontSize: 8,
-		marginBottom: 2,
+		fontSize: 6,
+		marginBottom: 0,
 	},
 });
 
@@ -160,11 +156,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 				{/* Información del Cliente */}
 				<View style={styles.clientInfo}>
 					<Text style={styles.clientName}>
-						{letterData.client.name.includes("SRL") || letterData.client.name.includes("S.A.")
-							? "Señores"
-							: letterData.client.name.includes("BETTY")
-							? "Señora"
-							: "Señor"}
+						{letterData.client.name.includes("SRL") || letterData.client.name.includes("S.A.") ? "Señores" : letterData.client.name.includes("BETTY") ? "Señora" : "Señor"}
 					</Text>
 					<Text style={styles.clientName}>{letterData.client.name.toUpperCase()}</Text>
 					{letterData.client.phone && (
@@ -172,9 +164,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 							{letterData.client.name.includes("SRL") ? "Teléfono" : "Telf"}: {letterData.client.phone}
 						</Text>
 					)}
-					{letterData.client.email && (
-						<Text style={styles.clientDetails}>Correo: {letterData.client.email}</Text>
-					)}
+					{letterData.client.email && <Text style={styles.clientDetails}>Correo: {letterData.client.email}</Text>}
 					<Text style={styles.present}>Presente.</Text>
 				</View>
 
@@ -195,8 +185,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 				<View style={styles.content}>
 					<Text style={styles.paragraph}>
 						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la
-						{letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de
-						Seguro cuyos detalles se especifican a continuación:
+						{letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de Seguro cuyos detalles se especifican a continuación:
 					</Text>
 
 					{/* Contenido dinámico basado en la plantilla */}
@@ -210,29 +199,36 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 
 					{letterData.templateType === "salud" && (
 						<Text style={styles.paragraph}>
-							Nos permitimos recordarle que los seguros de Salud o Enfermedad se pagan por adelantado, al
-							inicio de la vigencia, sea mensual o anual. En caso de tener primas pendientes no se podrá
+							Nos permitimos recordarle que los seguros de Salud o Enfermedad se pagan por adelantado, al inicio de la vigencia, sea mensual o anual. En caso de tener primas pendientes no se podrá
 							renovar.
 						</Text>
 					)}
 
 					<Text style={styles.paragraph}>
 						Es importante informarle que
-						{letterData.templateType !== "salud"
-							? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas,"
-							: " la"}{" "}
-						NO RENOVACION, suspende toda cobertura de la póliza de seguro.
+						{letterData.templateType !== "salud" ? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas," : " la"} NO RENOVACION, suspende toda cobertura de la
+						póliza de seguro.
 					</Text>
 
-					<Text style={styles.paragraph}>
-						De esta manera quedamos a la espera de su respuesta y nos despedimos con la cordialidad de
-						siempre.
-					</Text>
+					<Text style={styles.paragraph}>De esta manera quedamos a la espera de su respuesta y nos despedimos con la cordialidad de siempre.</Text>
 				</View>
 
 				{/* Firma */}
 				<View style={styles.signature}>
 					<Text>Atentamente,</Text>
+				</View>
+
+				{/* Firma Corporativa */}
+				<View style={styles.companyName}>
+					<Text>PATRIA S.A.</Text>
+					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
+				</View>
+
+				{/* Footer */}
+				<View style={styles.footer}>
+					<Text style={styles.footerText}>CC/*crfh</Text>
+					<Text style={styles.footerText}>CC.: File</Text>
+					<Text style={styles.footerText}>Adj.: Lo citado</Text>
 				</View>
 
 				{/* Bloque de firmas */}
@@ -252,19 +248,6 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 						<Text style={styles.signatureTitle}>PATRIA S.A.</Text>
 						<Text style={styles.signatureTitle}>Corredores y Asesores en Seguros</Text>
 					</View>
-				</View>
-
-				{/* Firma Corporativa */}
-				<View style={styles.companyName}>
-					<Text>PATRIA S.A.</Text>
-					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
-				</View>
-
-				{/* Footer */}
-				<View style={styles.footer}>
-					<Text style={styles.footerText}>CC/*crfh</Text>
-					<Text style={styles.footerText}>CC.: File</Text>
-					<Text style={styles.footerText}>Adj.: Lo citado</Text>
 				</View>
 			</Page>
 		</Document>

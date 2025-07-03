@@ -81,20 +81,9 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			});
 
 			policies = Object.values(healthPolicyGroups).map((policyGroup) => {
-				const mainRecord =
-					policyGroup.find(
-						(r) =>
-							!r.materiaAsegurada ||
-							r.materiaAsegurada.trim().toUpperCase() === r.asegurado.trim().toUpperCase()
-					) || policyGroup[0];
+				const mainRecord = policyGroup.find((r) => !r.materiaAsegurada || r.materiaAsegurada.trim().toUpperCase() === r.asegurado.trim().toUpperCase()) || policyGroup[0];
 
-				const insuredMembers = [
-					...new Set(
-						policyGroup
-							.map((r) => r.materiaAsegurada?.trim())
-							.filter((name): name is string => !!name && name.toUpperCase() !== "TITULAR")
-					),
-				];
+				const insuredMembers = [...new Set(policyGroup.map((r) => r.materiaAsegurada?.trim()).filter((name): name is string => !!name && name.toUpperCase() !== "TITULAR"))];
 
 				// Asegurarse que el titular esté en la lista y sea el primero
 				const titular = mainRecord.asegurado.trim();
@@ -182,11 +171,7 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 			}
 		} else {
 			// Para pólizas generales
-			if (
-				policy.manualFields?.insuredValue === undefined ||
-				policy.manualFields?.insuredValue === null ||
-				policy.manualFields.insuredValue <= 0
-			) {
+			if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
 				missing.push(`${policyLabel}: Valor Asegurado`);
 			}
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
@@ -220,7 +205,7 @@ export function generateReferenceNumber(): string {
 		.toString()
 		.padStart(4, "0");
 
-	return `SC-PSA-${random}/${year}`;
+	return `SCPSA-${random}/${year}`;
 }
 
 /**

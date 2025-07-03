@@ -47,21 +47,20 @@ const healthStyles = StyleSheet.create({
 		paddingRight: 10,
 		paddingTop: 5,
 		paddingBottom: 5,
-		backgroundColor: "#f9fafb",
+		backgroundColor: "#f8f9fa",
 		borderRadius: 4,
 		borderWidth: 1,
-		borderColor: "#f3f4f6",
+		borderColor: "#dee2e6",
 	},
 	aseguradosTitle: {
 		fontSize: 9,
 		fontWeight: "bold",
 		marginBottom: 5,
-		color: "#374151",
+		color: "#172554",
 	},
 	aseguradoName: {
 		fontSize: 8,
 		marginBottom: 2,
-		color: "#4b5563",
 	},
 });
 
@@ -110,11 +109,7 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 								<Text style={healthStyles.cellText}>{policy.branch}</Text>
 							</View>
 							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.cellText}>
-									{policy.manualFields?.renewalPremium
-										? formatUSD(policy.manualFields.renewalPremium)
-										: "A confirmar"}
-								</Text>
+								<Text style={healthStyles.cellText}>{policy.manualFields?.renewalPremium ? formatUSD(policy.manualFields.renewalPremium) : "A confirmar"}</Text>
 							</View>
 						</View>
 					</View>
