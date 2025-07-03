@@ -337,7 +337,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
 					missing.push(`${policyLabel}: Prima de renovación anual`);
 				}
-				missing.push(`${policyLabel}: Verificar cobertura COVID`); // This is a reminder, not a strict missing field
 			}
 
 			if (letter.templateType === "general") {
@@ -688,17 +687,17 @@ function LetterCard({
 			return "No especificado";
 		}
 		let formattedValue: string;
+		// creater new Intl.NumberFormat instance with Bolivian locale
+		const numberFormatter = new Intl.NumberFormat("es-BO", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+		// format value to bolivianos
+		formattedValue = numberFormatter.format(value);
+		// add the currency symbol
 		if (currency === "Bs.") {
-			formattedValue = new Intl.NumberFormat("es-BO", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}).format(value);
 			return `Bs. ${formattedValue}`;
 		} else if (currency === "$us.") {
-			formattedValue = new Intl.NumberFormat("en-US", {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			}).format(value);
 			return `$us. ${formattedValue}`;
 		}
 		return value.toString(); // Fallback
