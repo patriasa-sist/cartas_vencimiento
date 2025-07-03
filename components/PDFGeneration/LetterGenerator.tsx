@@ -2,19 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import {
-	FileText,
-	Download,
-	Eye,
-	AlertTriangle,
-	CheckCircle,
-	X,
-	Edit3,
-	Save,
-	RefreshCw,
-	Package,
-	Printer,
-} from "lucide-react";
+import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { ProcessedInsuranceRecord } from "@/types/insurance";
-import { LetterData, GeneratedLetter, PDFGenerationResult } from "@/types/pdf";
+import { LetterData, GeneratedLetter, PDFGenerationResult, PolicyForLetter } from "@/types/pdf";
 import {
 	groupRecordsForLetters,
 	validateRecordForPDF,
@@ -93,14 +81,7 @@ function NumericInput({ value, onChange, placeholder, className, label }: Numeri
 	return (
 		<div>
 			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
-			<Input
-				type="text"
-				value={displayValue}
-				onChange={handleChange}
-				onBlur={handleBlur}
-				placeholder={placeholder}
-				className={className}
-			/>
+			<Input type="text" value={displayValue} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} className={className} />
 		</div>
 	);
 }
@@ -116,15 +97,7 @@ interface NumericInputWithCurrencyProps {
 	className?: string;
 }
 
-function NumericInputWithCurrency({
-	value,
-	currency,
-	onValueChange,
-	onCurrencyChange,
-	label,
-	placeholder,
-	className,
-}: NumericInputWithCurrencyProps) {
+function NumericInputWithCurrency({ value, currency, onValueChange, onCurrencyChange, label, placeholder, className }: NumericInputWithCurrencyProps) {
 	const [displayValue, setDisplayValue] = useState(value !== undefined && value !== null ? String(value) : "");
 
 	useEffect(() => {
@@ -160,14 +133,7 @@ function NumericInputWithCurrency({
 		<div>
 			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
 			<div className="flex items-center space-x-2">
-				<Input
-					type="text"
-					value={displayValue}
-					onChange={handleChange}
-					onBlur={handleBlur}
-					placeholder={placeholder}
-					className={className}
-				/>
+				<Input type="text" value={displayValue} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} className={className} />
 				<Select value={currency} onValueChange={(val: "Bs." | "$us.") => onCurrencyChange(val)}>
 					<SelectTrigger className="w-20 h-8 text-xs">
 						<SelectValue />
@@ -281,11 +247,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		return (
 			letter.policies.some((policy) => {
 				// Check for insuredValue
-				if (
-					policy.manualFields?.insuredValue === undefined ||
-					policy.manualFields?.insuredValue === null ||
-					policy.manualFields.insuredValue <= 0
-				) {
+				if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
 					return true;
 				}
 				// Check for premium. If original premium was 0 or not provided, and editable premium is still 0/not provided
@@ -321,11 +283,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
 			// Check for insuredValue
-			if (
-				policy.manualFields?.insuredValue === undefined ||
-				policy.manualFields?.insuredValue === null ||
-				policy.manualFields.insuredValue <= 0
-			) {
+			if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
 				missing.push(`${policyLabel}: Valor Asegurado`);
 			}
 
@@ -485,16 +443,8 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</div>
 
 				<div className="flex items-center space-x-3">
-					<Button
-						onClick={handleDownloadAll}
-						disabled={isGenerating || letters.length === 0}
-						className="patria-btn-primary"
-					>
-						{isGenerating ? (
-							<RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-						) : (
-							<Package className="h-4 w-4 mr-2" />
-						)}
+					<Button onClick={handleDownloadAll} disabled={isGenerating || letters.length === 0} className="patria-btn-primary">
+						{isGenerating ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Package className="h-4 w-4 mr-2" />}
 						Descargar Todo (ZIP)
 					</Button>
 					<Button variant="outline" onClick={onClose}>
@@ -540,16 +490,12 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				<Alert className="border-yellow-200 bg-yellow-50">
 					<AlertTriangle className="h-4 w-4 text-yellow-600" />
 					<AlertDescription className="text-yellow-800">
-						<div className="font-medium mb-2">
-							{preparedLetters.validationErrors.length} registros omitidos por datos faltantes:
-						</div>
+						<div className="font-medium mb-2">{preparedLetters.validationErrors.length} registros omitidos por datos faltantes:</div>
 						<ul className="text-sm space-y-1 list-disc list-inside max-h-32 overflow-y-auto">
 							{preparedLetters.validationErrors.slice(0, 5).map((error, index) => (
 								<li key={index}>{error}</li>
 							))}
-							{preparedLetters.validationErrors.length > 5 && (
-								<li>... y {preparedLetters.validationErrors.length - 5} más</li>
-							)}
+							{preparedLetters.validationErrors.length > 5 && <li>... y {preparedLetters.validationErrors.length - 5} más</li>}
 						</ul>
 					</AlertDescription>
 				</Alert>
@@ -586,14 +532,8 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 							<div>
 								{" "}
 								{/* This div was missing a closing tag */}
-								<div className="font-medium text-green-800">
-									✅ {generationResult.totalGenerated} cartas generadas exitosamente
-								</div>
-								{generationResult.errors.length > 0 && (
-									<div className="text-sm text-red-600 mt-1">
-										{generationResult.errors.length} errores encontrados
-									</div>
-								)}
+								<div className="font-medium text-green-800">✅ {generationResult.totalGenerated} cartas generadas exitosamente</div>
+								{generationResult.errors.length > 0 && <div className="text-sm text-red-600 mt-1">{generationResult.errors.length} errores encontrados</div>}
 							</div>{" "}
 							{/* Closing tag added here */}
 						</div>
@@ -618,18 +558,7 @@ interface LetterCardProps {
 	onUpdateLetterData: (letterId: string, updates: Partial<LetterData>) => void;
 }
 
-function LetterCard({
-	letter,
-	isEditing,
-	isPreviewing,
-	isGenerating,
-	onEdit,
-	onSaveEdit,
-	onCancelEdit,
-	onPreview,
-	onDownload,
-	onUpdateLetterData,
-}: LetterCardProps) {
+function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onSaveEdit, onCancelEdit, onPreview, onDownload, onUpdateLetterData }: LetterCardProps) {
 	// Local state synchronized with props
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
 
@@ -643,22 +572,13 @@ function LetterCard({
 	};
 
 	// Function to update individual policy with correct typing
-	const updatePolicy = (
-		policyIndex: number,
-		field: string,
-		value: any,
-		currencyField?: string,
-		currencyValue?: "Bs." | "$us."
-	) => {
+	const updatePolicy = (policyIndex: number, field: keyof NonNullable<PolicyForLetter["manualFields"]>, value: any) => {
 		const updatedPolicies = editedLetter.policies.map((policy, index) => {
 			if (index === policyIndex) {
 				const updatedManualFields = {
 					...policy.manualFields,
 					[field]: value,
 				};
-				if (currencyField && currencyValue) {
-					updatedManualFields[currencyField] = currencyValue;
-				}
 				return {
 					...policy,
 					manualFields: updatedManualFields,
@@ -708,11 +628,7 @@ function LetterCard({
 	};
 
 	return (
-		<Card
-			className={`${getTemplateColor(letter.templateType)} ${
-				letter.needsReview ? "border-l-4 border-l-red-500" : "border-l-4 border-l-green-500"
-			}`}
-		>
+		<Card className={`${getTemplateColor(letter.templateType)} ${letter.needsReview ? "border-l-4 border-l-red-500" : "border-l-4 border-l-green-500"}`}>
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div className="flex items-center space-x-3">
@@ -720,8 +636,7 @@ function LetterCard({
 						<div>
 							<CardTitle className="text-lg">{letter.client.name}</CardTitle>
 							<CardDescription>
-								{letter.policies.length} póliza{letter.policies.length > 1 ? "s" : ""} • Template{" "}
-								{letter.templateType} • Ref: {letter.referenceNumber}
+								{letter.policies.length} póliza{letter.policies.length > 1 ? "s" : ""} • Template {letter.templateType} • Ref: {letter.referenceNumber}
 							</CardDescription>
 						</div>
 					</div>
@@ -751,24 +666,10 @@ function LetterCard({
 									<Button size="sm" variant="outline" onClick={onEdit} disabled={isGenerating}>
 										<Edit3 className="h-4 w-4" />
 									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										onClick={onPreview}
-										disabled={isGenerating || isPreviewing}
-									>
-										{isPreviewing ? (
-											<RefreshCw className="h-4 w-4 animate-spin" />
-										) : (
-											<Eye className="h-4 w-4" />
-										)}
+									<Button size="sm" variant="outline" onClick={onPreview} disabled={isGenerating || isPreviewing}>
+										{isPreviewing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
 									</Button>
-									<Button
-										size="sm"
-										onClick={onDownload}
-										disabled={isGenerating}
-										className="patria-btn-primary"
-									>
+									<Button size="sm" onClick={onDownload} disabled={isGenerating} className="patria-btn-primary">
 										<Download className="h-4 w-4" />
 									</Button>
 								</>
@@ -816,23 +717,10 @@ function LetterCard({
 
 								<div>
 									<div className="text-gray-600">Ramo: {policy.branch}</div>
-									<div className="text-gray-600">
-										Valor Original:{" "}
-										{policy.manualFields?.originalInsuredValue
-											? formatUSD(policy.manualFields.originalInsuredValue)
-											: "No especificado"}
-									</div>
-									<div className="text-gray-600">
-										Prima Original:{" "}
-										{policy.manualFields?.originalPremium
-											? formatCurrency(policy.manualFields.originalPremium)
-											: "No especificado"}
-									</div>
+									<div className="text-gray-600">Valor Original: {policy.manualFields?.originalInsuredValue ? formatUSD(policy.manualFields.originalInsuredValue) : "No especificado"}</div>
+									<div className="text-gray-600">Prima Original: {policy.manualFields?.originalPremium ? formatCurrency(policy.manualFields.originalPremium) : "No especificado"}</div>
 									<div className="text-gray-600 mt-1">
-										Materia Asegurada Original:{" "}
-										<span className="italic">
-											{policy.manualFields?.originalInsuredMatter || "No especificado"}
-										</span>
+										Materia Asegurada Original: <span className="italic">{policy.manualFields?.originalInsuredMatter || "No especificado"}</span>
 									</div>
 								</div>
 
@@ -875,9 +763,7 @@ function LetterCard({
 													<ConditionsTextarea
 														label="Materia Asegurada (editable):"
 														value={policy.manualFields?.insuredMatter || ""}
-														onChange={(value) =>
-															updatePolicy(index, "insuredMatter", value)
-														}
+														onChange={(value) => updatePolicy(index, "insuredMatter", value)}
 														placeholder="Describa la materia asegurada..."
 													/>
 
@@ -885,12 +771,8 @@ function LetterCard({
 														label="Deducibles:"
 														value={policy.manualFields?.deductibles}
 														currency={policy.manualFields?.deductiblesCurrency || "Bs."}
-														onValueChange={(value) =>
-															updatePolicy(index, "deductibles", value)
-														}
-														onCurrencyChange={(currency) =>
-															updatePolicy(index, "deductiblesCurrency", currency)
-														}
+														onValueChange={(value) => updatePolicy(index, "deductibles", value)}
+														onCurrencyChange={(currency) => updatePolicy(index, "deductiblesCurrency", currency)}
 														placeholder="0.00"
 														className="text-xs h-8"
 													/>
@@ -899,12 +781,8 @@ function LetterCard({
 														label="Extraterritorialidad:"
 														value={policy.manualFields?.territoriality}
 														currency={policy.manualFields?.territorialityCurrency || "Bs."}
-														onValueChange={(value) =>
-															updatePolicy(index, "territoriality", value)
-														}
-														onCurrencyChange={(currency) =>
-															updatePolicy(index, "territorialityCurrency", currency)
-														}
+														onValueChange={(value) => updatePolicy(index, "territoriality", value)}
+														onCurrencyChange={(currency) => updatePolicy(index, "territorialityCurrency", currency)}
 														placeholder="0.00"
 														className="text-xs h-8"
 													/>
@@ -912,9 +790,7 @@ function LetterCard({
 													<ConditionsTextarea
 														label="Condiciones específicas:"
 														value={policy.manualFields?.specificConditions || ""}
-														onChange={(value) =>
-															updatePolicy(index, "specificConditions", value)
-														}
+														onChange={(value) => updatePolicy(index, "specificConditions", value)}
 														placeholder="Describa condiciones adicionales, coberturas especiales, etc."
 													/>
 												</>
@@ -926,62 +802,29 @@ function LetterCard({
 									{!isEditing && policy.manualFields && (
 										<div className="text-xs space-y-1">
 											{/* Display editable insured value */}
-											{policy.manualFields.insuredValue !== undefined &&
-												policy.manualFields.insuredValue !== null && (
-													<div className="text-green-700 font-medium">
-														✓ Valor Asegurado (editable):{" "}
-														{formatUSD(policy.manualFields.insuredValue)}
-													</div>
-												)}
+											{policy.manualFields.insuredValue !== undefined && policy.manualFields.insuredValue !== null && (
+												<div className="text-green-700 font-medium">✓ Valor Asegurado (editable): {formatUSD(policy.manualFields.insuredValue)}</div>
+											)}
 											{/* Display editable premium */}
-											{policy.manualFields.premium !== undefined &&
-												policy.manualFields.premium !== null && (
-													<div className="text-green-700 font-medium">
-														✓ Prima (editable):{" "}
-														{formatCurrency(policy.manualFields.premium)}
-													</div>
-												)}
+											{policy.manualFields.premium !== undefined && policy.manualFields.premium !== null && (
+												<div className="text-green-700 font-medium">✓ Prima (editable): {formatCurrency(policy.manualFields.premium)}</div>
+											)}
 
-											{letter.templateType === "salud" &&
-												policy.manualFields.renewalPremium !== undefined &&
-												policy.manualFields.renewalPremium !== null && (
-													<div className="text-green-700 font-medium">
-														✓ Prima renovación:{" "}
-														{formatUSD(policy.manualFields.renewalPremium)}
-													</div>
-												)}
+											{letter.templateType === "salud" && policy.manualFields.renewalPremium !== undefined && policy.manualFields.renewalPremium !== null && (
+												<div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>
+											)}
 											{letter.templateType === "general" && (
 												<>
-													{policy.manualFields.insuredMatter && (
+													{policy.manualFields.insuredMatter && <div className="text-green-700 font-medium">✓ Materia Asegurada: {policy.manualFields.insuredMatter}</div>}
+													{policy.manualFields.deductibles !== undefined && policy.manualFields.deductibles !== null && (
+														<div className="text-green-700 font-medium">✓ Deducibles: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</div>
+													)}
+													{policy.manualFields.territoriality !== undefined && policy.manualFields.territoriality !== null && (
 														<div className="text-green-700 font-medium">
-															✓ Materia Asegurada: {policy.manualFields.insuredMatter}
+															✓ Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
 														</div>
 													)}
-													{policy.manualFields.deductibles !== undefined &&
-														policy.manualFields.deductibles !== null && (
-															<div className="text-green-700 font-medium">
-																✓ Deducibles:{" "}
-																{formatMonetaryValue(
-																	policy.manualFields.deductibles,
-																	policy.manualFields.deductiblesCurrency
-																)}
-															</div>
-														)}
-													{policy.manualFields.territoriality !== undefined &&
-														policy.manualFields.territoriality !== null && (
-															<div className="text-green-700 font-medium">
-																✓ Extraterritorialidad:{" "}
-																{formatMonetaryValue(
-																	policy.manualFields.territoriality,
-																	policy.manualFields.territorialityCurrency
-																)}
-															</div>
-														)}
-													{policy.manualFields.specificConditions && (
-														<div className="text-green-700 font-medium">
-															✓ Condiciones: {policy.manualFields.specificConditions}
-														</div>
-													)}
+													{policy.manualFields.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}
 												</>
 											)}
 										</div>
@@ -1013,9 +856,7 @@ function LetterCard({
 					<div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
 						<div className="flex items-center">
 							<CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-							<span className="font-medium text-green-800">
-								Todos los datos están completos. Lista para generar.
-							</span>
+							<span className="font-medium text-green-800">Todos los datos están completos. Lista para generar.</span>
 						</div>
 					</div>
 				)}
