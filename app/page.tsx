@@ -1,241 +1,232 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { FileSpreadsheet, BarChart3, Mail, Users, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import FileUpload from '@/components/FileUpload';
-import Dashboard from '@/components/Dashboard';
-import CriticalAlerts from '@/components/CriticalAlerts';
-import { ProcessedInsuranceRecord } from '@/types/insurance';
+import React, { useState } from "react";
+import { FileSpreadsheet, BarChart3, Mail, Users, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import FileUpload from "@/components/FileUpload";
+import Dashboard from "@/components/Dashboard";
+import CriticalAlerts from "@/components/CriticalAlerts";
+import { ProcessedInsuranceRecord } from "@/types/insurance";
 
-type ViewState = 'upload' | 'dashboard' | 'critical-alerts';
+type ViewState = "upload" | "dashboard" | "critical-alerts";
 
 export default function HomePage() {
-  const [insuranceData, setInsuranceData] = useState<ProcessedInsuranceRecord[]>([]);
-  const [currentView, setCurrentView] = useState<ViewState>('upload');
-  const [error, setError] = useState<string>('');
+	const [insuranceData, setInsuranceData] = useState<ProcessedInsuranceRecord[]>([]);
+	const [currentView, setCurrentView] = useState<ViewState>("upload");
+	const [error, setError] = useState<string>("");
 
-  const handleDataLoaded = (data: ProcessedInsuranceRecord[]) => {
-    setInsuranceData(data);
-    setCurrentView('dashboard');
-    setError('');
-  };
+	const handleDataLoaded = (data: ProcessedInsuranceRecord[]) => {
+		setInsuranceData(data);
+		setCurrentView("dashboard");
+		setError("");
+	};
 
-  const handleError = (errorMessage: string) => {
-    setError(errorMessage);
-  };
+	const handleError = (errorMessage: string) => {
+		setError(errorMessage);
+	};
 
-  const resetToUpload = () => {
-    setCurrentView('upload');
-    setInsuranceData([]);
-    setError('');
-  };
+	const resetToUpload = () => {
+		setCurrentView("upload");
+		setInsuranceData([]);
+		setError("");
+	};
 
-  const goToCriticalAlerts = () => {
-    setCurrentView('critical-alerts');
-  };
+	const goToCriticalAlerts = () => {
+		setCurrentView("critical-alerts");
+	};
 
-  const goToDashboard = () => {
-    setCurrentView('dashboard');
-  };
+	const goToDashboard = () => {
+		setCurrentView("dashboard");
+	};
 
-  // Calcular estadísticas rápidas para la vista de resumen
-  const stats = React.useMemo(() => {
-    if (insuranceData.length === 0) return null;
+	// Calcular estadísticas rápidas para la vista de resumen
+	const stats = React.useMemo(() => {
+		if (insuranceData.length === 0) return null;
 
-    const total = insuranceData.length;
-    const critical = insuranceData.filter(r => r.status === 'critical').length;
-    const dueSoon = insuranceData.filter(r => r.status === 'due_soon').length;
-    const pending = insuranceData.filter(r => r.status === 'pending').length;
-    const expired = insuranceData.filter(r => r.status === 'expired').length;
-    const totalValue = insuranceData.reduce((sum, r) => sum + r.valorAsegurado, 0);
+		const total = insuranceData.length;
+		const critical = insuranceData.filter((r) => r.status === "critical").length;
+		const dueSoon = insuranceData.filter((r) => r.status === "due_soon").length;
+		const pending = insuranceData.filter((r) => r.status === "pending").length;
+		const expired = insuranceData.filter((r) => r.status === "expired").length;
+		const totalValue = insuranceData.reduce((sum, r) => sum + r.valorAsegurado, 0);
 
-    return { total, critical, dueSoon, pending, expired, totalValue };
-  }, [insuranceData]);
+		return { total, critical, dueSoon, pending, expired, totalValue };
+	}, [insuranceData]);
 
-  // Renderizar vista actual
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard data={insuranceData} onBack={resetToUpload} />;
-      
-      case 'critical-alerts':
-        return <CriticalAlerts data={insuranceData} onBack={goToDashboard} />;
-      
-      case 'upload':
-      default:
-        return (
-          <div className="space-y-8">
-            {/* Título de bienvenida */}
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Bienvenido al Sistema de Cartas de Vencimiento
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Sube tu archivo Excel con los datos de seguros y automatiza la creación 
-                y envío de cartas de vencimiento a tus clientes.
-              </p>
-            </div>
+	// Renderizar vista actual
+	const renderCurrentView = () => {
+		switch (currentView) {
+			case "dashboard":
+				return <Dashboard data={insuranceData} onBack={resetToUpload} />;
 
-            {/* Características del sistema */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="patria-card">
-                <CardContent className="p-6 text-center">
-                  <FileSpreadsheet className="h-12 w-12 text-patria-blue mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Carga de Datos</h3>
-                  <p className="text-sm text-gray-600">
-                    Procesa archivos Excel con validación automática
-                  </p>
-                </CardContent>
-              </Card>
+			case "critical-alerts":
+				return <CriticalAlerts data={insuranceData} onBack={goToDashboard} />;
 
-              <Card className="patria-card">
-                <CardContent className="p-6 text-center">
-                  <BarChart3 className="h-12 w-12 text-patria-green mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Dashboard</h3>
-                  <p className="text-sm text-gray-600">
-                    Visualiza y filtra datos de manera intuitiva
-                  </p>
-                </CardContent>
-              </Card>
+			case "upload":
+			default:
+				return (
+					<div className="space-y-8">
+						{/* Título de bienvenida */}
+						<div className="text-center">
+							<h2 className="text-3xl font-bold text-gray-900 mb-4">Bienvenido al Sistema de Cartas de Vencimiento</h2>
+							<p className="text-lg text-gray-600 max-w-2xl mx-auto">Sube tu archivo Excel con los datos de seguros y automatiza la creación y envío de cartas de vencimiento a tus clientes.</p>
+						</div>
 
-              <Card className="patria-card">
-                <CardContent className="p-6 text-center">
-                  <Mail className="h-12 w-12 text-patria-blue mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Envío Automático</h3>
-                  <p className="text-sm text-gray-600">
-                    Genera y envía cartas por email o descarga en ZIP
-                  </p>
-                </CardContent>
-              </Card>
+						{/* Características del sistema */}
+						<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+							<Card className="patria-card">
+								<CardContent className="p-6 text-center">
+									<FileSpreadsheet className="h-12 w-12 text-patria-blue mx-auto mb-3" />
+									<h3 className="font-semibold text-gray-900 mb-2">Carga de Datos</h3>
+									<p className="text-sm text-gray-600">Procesa archivos Excel con validación automática</p>
+								</CardContent>
+							</Card>
 
-              <Card className="patria-card">
-                <CardContent className="p-6 text-center">
-                  <Users className="h-12 w-12 text-patria-green mx-auto mb-3" />
-                  <h3 className="font-semibold text-gray-900 mb-2">Seguimiento</h3>
-                  <p className="text-sm text-gray-600">
-                    Control completo del estado de las notificaciones
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+							<Card className="patria-card">
+								<CardContent className="p-6 text-center">
+									<BarChart3 className="h-12 w-12 text-patria-green mx-auto mb-3" />
+									<h3 className="font-semibold text-gray-900 mb-2">Dashboard</h3>
+									<p className="text-sm text-gray-600">Visualiza y filtra datos de manera intuitiva</p>
+								</CardContent>
+							</Card>
 
-            {/* Error display */}
-            {error && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-2 text-red-800">
-                    <AlertTriangle className="h-5 w-5" />
-                    <p className="font-medium">Error:</p>
-                  </div>
-                  <p className="text-red-700 mt-1">{error}</p>
-                </CardContent>
-              </Card>
-            )}
+							<Card className="patria-card">
+								<CardContent className="p-6 text-center">
+									<Mail className="h-12 w-12 text-patria-blue mx-auto mb-3" />
+									<h3 className="font-semibold text-gray-900 mb-2">Envío Automático</h3>
+									<p className="text-sm text-gray-600">Genera y envía cartas por email o descarga en ZIP</p>
+								</CardContent>
+							</Card>
 
-            {/* File upload component */}
-            <FileUpload
-              onDataLoaded={handleDataLoaded}
-              onError={handleError}
-            />
+							<Card className="patria-card">
+								<CardContent className="p-6 text-center">
+									<Users className="h-12 w-12 text-patria-green mx-auto mb-3" />
+									<h3 className="font-semibold text-gray-900 mb-2">Seguimiento</h3>
+									<p className="text-sm text-gray-600">Control completo del estado de las notificaciones</p>
+								</CardContent>
+							</Card>
+						</div>
 
-            {/* Instrucciones */}
-            <Card className="patria-card">
-              <CardHeader>
-                <CardTitle className="text-patria-blue">Instrucciones</CardTitle>
-                <CardDescription>
-                  Asegúrate de que tu archivo Excel contenga las siguientes columnas:
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Columnas Requeridas:</h4>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li>• <span className="font-medium">FIN DE VIGENCIA</span> - Fecha de vencimiento</li>
-                      <li>• <span className="font-medium">COMPAÑÍA</span> - Aseguradora</li>
-                      <li>• <span className="font-medium">NO. PÓLIZA</span> - Número de póliza</li>
-                      <li>• <span className="font-medium">ASEGURADO</span> - Nombre del cliente</li>
-                      <li>• <span className="font-medium">EJECUTIVO</span> - Ejecutivo a cargo</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Columnas Opcionales:</h4>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li>• <span className="font-medium">TELÉFONO</span> - Contacto del cliente</li>
-                      <li>• <span className="font-medium">CORREO/DIRECCION</span> - Email del cliente</li>
-                      <li>• <span className="font-medium">VALOR ASEGURADO</span> - Monto asegurado</li>
-                      <li>• <span className="font-medium">PRIMA</span> - Prima del seguro</li>
-                      <li>• <span className="font-medium">RAMO</span> - Tipo de seguro</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-    }
-  };
+						{/* Error display */}
+						{error && (
+							<Card className="border-red-200 bg-red-50">
+								<CardContent className="p-4">
+									<div className="flex items-center space-x-2 text-red-800">
+										<AlertTriangle className="h-5 w-5" />
+										<p className="font-medium">Error:</p>
+									</div>
+									<p className="text-red-700 mt-1">{error}</p>
+								</CardContent>
+							</Card>
+						)}
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="patria-gradient shadow-lg">
-        <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-patria-blue font-bold text-xl">P</span>
-              </div>
-              <div>
-                <h1 className="text-white text-xl font-bold">PATRIA S.A.</h1>
-                <p className="text-blue-100 text-sm">Sistema de Cartas de Vencimiento</p>
-              </div>
-            </div>
-            
-            {/* Navegación del header */}
-            {currentView !== 'upload' && (
-              <div className="flex items-center space-x-3">
-                {stats && stats.critical > 0 && currentView !== 'critical-alerts' && (
-                  <Button
-                    variant="ghost"
-                    onClick={goToCriticalAlerts}
-                    className="text-white hover:bg-white/10 border border-red-300"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    {stats.critical} Críticos
-                  </Button>
-                )}
-                
-                {currentView !== 'dashboard' && (
-                  <Button
-                    variant="ghost"
-                    onClick={goToDashboard}
-                    className="text-white hover:bg-white/10"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                )}
-                
-                <Button
-                  variant="ghost"
-                  onClick={resetToUpload}
-                  className="text-white hover:bg-white/10"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Nuevo Archivo
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+						{/* File upload component */}
+						<FileUpload onDataLoaded={handleDataLoaded} onError={handleError} />
 
-      <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {renderCurrentView()}
-      </main>
-    </div>
-  );
+						{/* Instrucciones */}
+						<Card className="patria-card">
+							<CardHeader>
+								<CardTitle className="text-patria-blue">Instrucciones</CardTitle>
+								<CardDescription>Asegúrate de que tu archivo Excel contenga las siguientes columnas:</CardDescription>
+							</CardHeader>
+							<CardContent>
+								<div className="grid md:grid-cols-2 gap-6">
+									<div>
+										<h4 className="font-semibold text-gray-900 mb-3">Columnas Requeridas:</h4>
+										<ul className="space-y-2 text-sm text-gray-600">
+											<li>
+												• <span className="font-medium">FIN DE VIGENCIA</span> - Fecha de vencimiento
+											</li>
+											<li>
+												• <span className="font-medium">COMPAÑÍA</span> - Aseguradora
+											</li>
+											<li>
+												• <span className="font-medium">RAMO</span> - Tipo de seguro
+											</li>
+											<li>
+												• <span className="font-medium">NO. PÓLIZA</span> - Número de póliza
+											</li>
+											<li>
+												• <span className="font-medium">ASEGURADO</span> - Nombre del cliente
+											</li>
+											<li>
+												• <span className="font-medium">EJECUTIVO</span> - Ejecutivo a cargo
+											</li>
+										</ul>
+									</div>
+									<div>
+										<h4 className="font-semibold text-gray-900 mb-3">Columnas Opcionales:</h4>
+										<ul className="space-y-2 text-sm text-gray-600">
+											<li>
+												• <span className="font-medium">TELÉFONO</span> - Contacto del cliente
+											</li>
+											<li>
+												• <span className="font-medium">CORREO/DIRECCION</span> - Email del cliente
+											</li>
+											<li>
+												• <span className="font-medium">VALOR ASEGURADO</span> - Monto asegurado
+											</li>
+											<li>
+												• <span className="font-medium">PRIMA</span> - Prima del seguro
+											</li>
+											<li>
+												• <span className="font-medium">MATERIA ASEGURADA</span> - Materia o dependiente asegurado
+											</li>
+										</ul>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+				);
+		}
+	};
+
+	return (
+		<div className="min-h-screen bg-gray-50">
+			{/* Header */}
+			<header className="patria-gradient shadow-lg">
+				<div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+					<div className="flex items-center justify-between h-16">
+						<div className="flex items-center space-x-3">
+							<div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+								<span className="text-patria-blue font-bold text-xl">P</span>
+							</div>
+							<div>
+								<h1 className="text-white text-xl font-bold">PATRIA S.A.</h1>
+								<p className="text-blue-100 text-sm">Sistema de Cartas de Vencimiento</p>
+							</div>
+						</div>
+
+						{/* Navegación del header */}
+						{currentView !== "upload" && (
+							<div className="flex items-center space-x-3">
+								{stats && stats.critical > 0 && currentView !== "critical-alerts" && (
+									<Button variant="ghost" onClick={goToCriticalAlerts} className="text-white hover:bg-white/10 border border-red-300">
+										<AlertTriangle className="h-4 w-4 mr-2" />
+										{stats.critical} Críticos
+									</Button>
+								)}
+
+								{currentView !== "dashboard" && (
+									<Button variant="ghost" onClick={goToDashboard} className="text-white hover:bg-white/10">
+										<BarChart3 className="h-4 w-4 mr-2" />
+										Dashboard
+									</Button>
+								)}
+
+								<Button variant="ghost" onClick={resetToUpload} className="text-white hover:bg-white/10">
+									<FileSpreadsheet className="h-4 w-4 mr-2" />
+									Nuevo Archivo
+								</Button>
+							</div>
+						)}
+					</div>
+				</div>
+			</header>
+
+			<main className="w-full px-4 sm:px-6 lg:px-8 py-8">{renderCurrentView()}</main>
+		</div>
+	);
 }
