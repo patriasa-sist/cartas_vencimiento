@@ -300,6 +300,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				// For general template, check specificConditions, deductibles, and territoriality
 				if (letter.templateType === "general") {
 					return (
+						!policy.manualFields?.insuredMatter || // Check for insured matter
 						!policy.manualFields?.specificConditions ||
 						!policy.manualFields?.deductibles ||
 						policy.manualFields.deductibles <= 0 ||
@@ -340,6 +341,9 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			}
 
 			if (letter.templateType === "general") {
+				if (!policy.manualFields?.insuredMatter) {
+					missing.push(`${policyLabel}: Materia Asegurada`);
+				}
 				if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
 					missing.push(`${policyLabel}: Información de deducibles`);
 				}
@@ -824,6 +828,12 @@ function LetterCard({
 											? formatCurrency(policy.manualFields.originalPremium)
 											: "No especificado"}
 									</div>
+									<div className="text-gray-600 mt-1">
+										Materia Asegurada Original:{" "}
+										<span className="italic">
+											{policy.manualFields?.originalInsuredMatter || "No especificado"}
+										</span>
+									</div>
 								</div>
 
 								{/* Improved Editable Fields */}
@@ -862,6 +872,15 @@ function LetterCard({
 											{/* General-specific fields */}
 											{letter.templateType === "general" && (
 												<>
+													<ConditionsTextarea
+														label="Materia Asegurada (editable):"
+														value={policy.manualFields?.insuredMatter || ""}
+														onChange={(value) =>
+															updatePolicy(index, "insuredMatter", value)
+														}
+														placeholder="Describa la materia asegurada..."
+													/>
+
 													<NumericInputWithCurrency
 														label="Deducibles:"
 														value={policy.manualFields?.deductibles}
@@ -933,6 +952,11 @@ function LetterCard({
 												)}
 											{letter.templateType === "general" && (
 												<>
+													{policy.manualFields.insuredMatter && (
+														<div className="text-green-700 font-medium">
+															✓ Materia Asegurada: {policy.manualFields.insuredMatter}
+														</div>
+													)}
 													{policy.manualFields.deductibles !== undefined &&
 														policy.manualFields.deductibles !== null && (
 															<div className="text-green-700 font-medium">
@@ -964,15 +988,6 @@ function LetterCard({
 									)}
 								</div>
 							</div>
-
-							{/* Insured Matter */}
-							{policy.insuredMatter && (
-								<div className="mt-2 pt-2 border-t border-gray-200">
-									<div className="text-xs text-gray-600">
-										<span className="font-medium">Materia asegurada:</span> {policy.insuredMatter}
-									</div>
-								</div>
-							)}
 						</div>
 					))}
 				</div>

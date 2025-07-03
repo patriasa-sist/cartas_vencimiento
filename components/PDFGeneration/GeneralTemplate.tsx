@@ -168,25 +168,10 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 				))}
 			</View>
 
-			{/* Materia Asegurada (si existe) */}
-			{letterData.policies.some((p) => p.insuredMatter) && (
-				<View style={generalStyles.conditionsBox}>
-					<Text style={generalStyles.conditionsTitle}>MATERIA ASEGURADA:</Text>
-					{letterData.policies.map(
-						(policy, index) =>
-							policy.insuredMatter && (
-								<Text key={index} style={generalStyles.conditionText}>
-									• {policy.insuredMatter}
-								</Text>
-							)
-					)}
-				</View>
-			)}
-
 			{/* Materia Asegurada y Condiciones Específicas */}
 			{letterData.policies.some(
 				(p) =>
-					p.insuredMatter ||
+					p.manualFields?.insuredMatter ||
 					p.manualFields?.deductibles !== undefined ||
 					p.manualFields?.territoriality !== undefined ||
 					p.manualFields?.specificConditions
@@ -194,13 +179,13 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 				<View style={generalStyles.conditionsBox}>
 					<Text style={generalStyles.conditionsTitle}>DETALLE DE LA PÓLIZA:</Text>
 					{letterData.policies.map((policy, index) => (
-						<View key={index}>
+						<View key={index} style={{ marginBottom: index < letterData.policies.length - 1 ? 10 : 0 }}>
 							<Text style={generalStyles.conditionText}>
 								<Text style={{ fontWeight: "bold" }}>Póliza {policy.policyNumber}:</Text>
 							</Text>
-							{policy.insuredMatter && (
+							{policy.manualFields?.insuredMatter && (
 								<Text style={generalStyles.conditionText}>
-									• Materia Asegurada: {policy.insuredMatter}
+									• Materia Asegurada: {policy.manualFields.insuredMatter}
 								</Text>
 							)}
 							{policy.manualFields?.deductibles !== undefined &&

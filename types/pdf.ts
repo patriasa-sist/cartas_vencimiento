@@ -26,9 +26,10 @@ export interface PolicyForLetter {
 	branch: string;
 	insuredValue?: number;
 	premium?: number;
-	insuredMatter?: string;
 	insuredMembers?: string[]; // NUEVO: Para listar asegurados en pólizas de salud
 	manualFields?: {
+		insuredMatter?: string; // NUEVO: Materia asegurada editable
+		originalInsuredMatter?: string; // NUEVO: Para guardar el valor original
 		specificConditions?: string;
 		deductibles?: number;
 		deductiblesCurrency?: "Bs." | "$us.";

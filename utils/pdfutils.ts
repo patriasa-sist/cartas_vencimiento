@@ -111,13 +111,14 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 					branch: mainRecord.ramo,
 					insuredValue: mainRecord.valorAsegurado,
 					premium: mainRecord.prima,
-					insuredMatter: mainRecord.materiaAsegurada,
 					insuredMembers, // Lista de todos los asegurados para esta póliza
 					manualFields: {
 						premium: mainRecord.prima,
 						originalPremium: mainRecord.prima,
 						insuredValue: mainRecord.valorAsegurado,
 						originalInsuredValue: mainRecord.valorAsegurado,
+						insuredMatter: mainRecord.materiaAsegurada,
+						originalInsuredMatter: mainRecord.materiaAsegurada,
 						deductiblesCurrency: "Bs.",
 						territorialityCurrency: "Bs.",
 					},
@@ -132,12 +133,13 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 				branch: record.ramo,
 				insuredValue: record.valorAsegurado,
 				premium: record.prima,
-				insuredMatter: record.materiaAsegurada,
 				manualFields: {
 					premium: record.prima,
 					originalPremium: record.prima,
 					insuredValue: record.valorAsegurado,
 					originalInsuredValue: record.valorAsegurado,
+					insuredMatter: record.materiaAsegurada,
+					originalInsuredMatter: record.materiaAsegurada,
 					deductiblesCurrency: "Bs.",
 					territorialityCurrency: "Bs.",
 				},
@@ -189,6 +191,9 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 			}
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
 				missing.push(`${policyLabel}: Prima`);
+			}
+			if (!policy.manualFields?.insuredMatter) {
+				missing.push(`${policyLabel}: Materia Asegurada`);
 			}
 			if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
 				missing.push(`${policyLabel}: Información de deducibles`);
