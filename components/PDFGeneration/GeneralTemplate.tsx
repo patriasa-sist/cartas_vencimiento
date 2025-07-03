@@ -31,7 +31,7 @@ const generalStyles = StyleSheet.create({
 	},
 	headerText: {
 		fontWeight: "bold",
-		fontSize: 8,
+		fontSize: 9,
 		textAlign: "center",
 		color: "#1f2937",
 	},
@@ -48,18 +48,19 @@ const generalStyles = StyleSheet.create({
 		backgroundColor: "#f8f9fa",
 		padding: 8,
 		marginTop: 10,
+		marginBottom: 10,
 		borderWidth: 1,
 		borderColor: "#dee2e6",
 		borderRadius: 4,
 	},
 	conditionsTitle: {
-		fontSize: 9,
+		fontSize: 10,
 		fontWeight: "bold",
 		marginBottom: 8,
 		color: "#172554",
 	},
 	conditionText: {
-		fontSize: 8,
+		fontSize: 9,
 		marginBottom: 5,
 		lineHeight: 1.3,
 	},
@@ -141,8 +142,7 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 						<View style={[generalStyles.tableCol, { width: "25%" }]}>
 							{" "}
 							{/* Ancho aumentado para No. de Póliza */}
-							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text>{" "}
-							{/* Usar estilo específico */}
+							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text> {/* Usar estilo específico */}
 						</View>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
@@ -151,18 +151,10 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							<Text style={generalStyles.cellText}>
-								{policy.manualFields?.insuredValue
-									? formatUSD(policy.manualFields.insuredValue)
-									: "No especificado"}
-							</Text>
+							<Text style={generalStyles.cellText}>{policy.manualFields?.insuredValue ? formatUSD(policy.manualFields.insuredValue) : "No especificado"}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							<Text style={generalStyles.cellText}>
-								{policy.manualFields?.premium
-									? formatCurrency(policy.manualFields.premium)
-									: "No especificado"}
-							</Text>
+							<Text style={generalStyles.cellText}>{policy.manualFields?.premium ? formatCurrency(policy.manualFields.premium) : "No especificado"}</Text>
 						</View>
 					</View>
 				))}
@@ -170,11 +162,7 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 
 			{/* Materia Asegurada y Condiciones Específicas */}
 			{letterData.policies.some(
-				(p) =>
-					p.manualFields?.insuredMatter ||
-					p.manualFields?.deductibles !== undefined ||
-					p.manualFields?.territoriality !== undefined ||
-					p.manualFields?.specificConditions
+				(p) => p.manualFields?.insuredMatter || p.manualFields?.deductibles !== undefined || p.manualFields?.territoriality !== undefined || p.manualFields?.specificConditions
 			) && (
 				<View style={generalStyles.conditionsBox}>
 					<Text style={generalStyles.conditionsTitle}>DETALLE DE LA PÓLIZA:</Text>
@@ -183,31 +171,13 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 							<Text style={generalStyles.conditionText}>
 								<Text style={{ fontWeight: "bold" }}>Póliza {policy.policyNumber}:</Text>
 							</Text>
-							{policy.manualFields?.insuredMatter && (
-								<Text style={generalStyles.conditionText}>
-									• Materia Asegurada: {policy.manualFields.insuredMatter}
-								</Text>
+							{policy.manualFields?.insuredMatter && <Text style={generalStyles.conditionText}>• Materia Asegurada: {policy.manualFields.insuredMatter}</Text>}
+							{policy.manualFields?.deductibles !== undefined && policy.manualFields?.deductibles !== null && (
+								<Text style={generalStyles.conditionText}>• Deducible coaseguro: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</Text>
 							)}
-							{policy.manualFields?.deductibles !== undefined &&
-								policy.manualFields?.deductibles !== null && (
-									<Text style={generalStyles.conditionText}>
-										• Deducible coaseguro:{" "}
-										{formatMonetaryValue(
-											policy.manualFields.deductibles,
-											policy.manualFields.deductiblesCurrency
-										)}
-									</Text>
-								)}
-							{policy.manualFields?.territoriality !== undefined &&
-								policy.manualFields?.territoriality !== null && (
-									<Text style={generalStyles.conditionText}>
-										• Extraterritorialidad:{" "}
-										{formatMonetaryValue(
-											policy.manualFields.territoriality,
-											policy.manualFields.territorialityCurrency
-										)}
-									</Text>
-								)}
+							{policy.manualFields?.territoriality !== undefined && policy.manualFields?.territoriality !== null && (
+								<Text style={generalStyles.conditionText}>• Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}</Text>
+							)}
 							{policy.manualFields?.specificConditions && (
 								<Text style={generalStyles.conditionText}>
 									• Condiciones Específicas:{"\n"}
