@@ -1,29 +1,9 @@
-// components/Dashboard.tsx - Updated with PDF Generation Integration
+// components/Dashboard.tsx - Updated with natural sorting for sent items
 
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import {
-	Search,
-	Filter,
-	Download,
-	Mail,
-	AlertTriangle,
-	Calendar,
-	Building2,
-	User,
-	FileText,
-	SortAsc,
-	SortDesc,
-	ChevronLeft,
-	ChevronRight,
-	MoreHorizontal,
-	Eye,
-	CheckSquare,
-	Square,
-	Package,
-	Zap,
-} from "lucide-react";
+import { Search, Filter, Download, Mail, AlertTriangle, Calendar, Building2, User, FileText, SortAsc, SortDesc, ChevronLeft, ChevronRight, Eye, CheckSquare, Package, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,13 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-	ProcessedInsuranceRecord,
-	FilterOptions,
-	SortOptions,
-	DashboardStats,
-	InsuranceStatus,
-} from "@/types/insurance";
+import { ProcessedInsuranceRecord, SortOptions, DashboardStats, InsuranceStatus } from "@/types/insurance";
 import { formatCurrency, formatDate, getUniqueValues } from "@/utils/excel";
 import LetterGenerator from "@/components/PDFGeneration/LetterGenerator";
 import { PDFGenerationResult } from "@/types/pdf";
@@ -45,12 +19,12 @@ import { PDFGenerationResult } from "@/types/pdf";
 interface DashboardProps {
 	data: ProcessedInsuranceRecord[];
 	onBack: () => void;
+	onUpdateData: (newData: ProcessedInsuranceRecord[]) => void;
 }
 
 const ITEMS_PER_PAGE = 75;
 
-export default function Dashboard({ data, onBack }: DashboardProps) {
-	// Estados principales
+export default function Dashboard({ data, onBack, onUpdateData }: DashboardProps) {
 	const [filteredData, setFilteredData] = useState<ProcessedInsuranceRecord[]>(data);
 	const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
 	const [currentPage, setCurrentPage] = useState(1);
@@ -59,7 +33,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		direction: "asc",
 	});
 
-	// Estados de filtros
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedEjecutivo, setSelectedEjecutivo] = useState<string>("all-ejecutivos");
 	const [selectedCompania, setSelectedCompania] = useState<string>("all-companias");
@@ -67,14 +40,11 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 	const [selectedStatus, setSelectedStatus] = useState<InsuranceStatus[]>([]);
 	const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
-	// Estados para generación de PDFs
 	const [showLetterGenerator, setShowLetterGenerator] = useState(false);
 	const [pdfGenerationResult, setPdfGenerationResult] = useState<PDFGenerationResult | null>(null);
 
-	// Valores únicos para filtros - con filtrado más estricto
 	const uniqueValues = useMemo(() => {
-		const filterValidValues = (values: string[]) =>
-			values.filter((v) => v && typeof v === "string" && v.trim().length > 0);
+		const filterValidValues = (values: string[]) => values.filter((v) => v && typeof v === "string" && v.trim().length > 0);
 
 		return {
 			ejecutivos: filterValidValues(getUniqueValues(data, "ejecutivo")),
@@ -83,7 +53,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		};
 	}, [data]);
 
-	// Estadísticas calculadas
 	const stats: DashboardStats = useMemo(() => {
 		const total = filteredData.length;
 		const critical = filteredData.filter((r) => r.status === "critical").length;
@@ -106,48 +75,32 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		};
 	}, [filteredData]);
 
-	// Obtener registros seleccionados
 	const getSelectedRecords = (): ProcessedInsuranceRecord[] => {
-		return filteredData.filter((record) => selectedRecords.has(record.id!));
+		return data.filter((record) => selectedRecords.has(record.id!));
 	};
 
-	// Aplicar filtros
 	const applyFilters = useCallback(() => {
 		let filtered = [...data];
 
-		// Filtro de búsqueda
 		if (searchTerm.trim()) {
 			const term = searchTerm.toLowerCase();
-			filtered = filtered.filter(
-				(record) =>
-					record.asegurado.toLowerCase().includes(term) ||
-					record.noPoliza.toLowerCase().includes(term) ||
-					record.compania.toLowerCase().includes(term)
-			);
+			filtered = filtered.filter((record) => record.asegurado.toLowerCase().includes(term) || record.noPoliza.toLowerCase().includes(term) || record.compania.toLowerCase().includes(term));
 		}
 
-		// Filtro por ejecutivo
 		if (selectedEjecutivo && selectedEjecutivo !== "all-ejecutivos") {
 			filtered = filtered.filter((record) => {
 				const recordValue = record.ejecutivo?.trim() || "";
-				return (
-					recordValue === selectedEjecutivo ||
-					(selectedEjecutivo.startsWith("empty-ejecutivo-") && !recordValue)
-				);
+				return recordValue === selectedEjecutivo || (selectedEjecutivo.startsWith("empty-ejecutivo-") && !recordValue);
 			});
 		}
 
-		// Filtro por compañía
 		if (selectedCompania && selectedCompania !== "all-companias") {
 			filtered = filtered.filter((record) => {
 				const recordValue = record.compania?.trim() || "";
-				return (
-					recordValue === selectedCompania || (selectedCompania.startsWith("empty-compania-") && !recordValue)
-				);
+				return recordValue === selectedCompania || (selectedCompania.startsWith("empty-compania-") && !recordValue);
 			});
 		}
 
-		// Filtro por ramo
 		if (selectedRamo && selectedRamo !== "all-ramos") {
 			filtered = filtered.filter((record) => {
 				const recordValue = record.ramo?.trim() || "";
@@ -155,12 +108,10 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 			});
 		}
 
-		// Filtro por status
 		if (selectedStatus.length > 0) {
 			filtered = filtered.filter((record) => selectedStatus.includes(record.status));
 		}
 
-		// Filtro por rango de fechas
 		if (dateRange.from || dateRange.to) {
 			filtered = filtered.filter((record) => {
 				const recordDate = new Date(record.finDeVigencia);
@@ -170,7 +121,7 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 			});
 		}
 
-		// Aplicar ordenamiento
+		// Apply sorting based on user selection
 		filtered.sort((a, b) => {
 			const aValue = a[sortOptions.field];
 			const bValue = b[sortOptions.field];
@@ -178,17 +129,12 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 			if (typeof aValue === "string" && typeof bValue === "string") {
 				return sortOptions.direction === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
 			}
-
 			if (typeof aValue === "number" && typeof bValue === "number") {
 				return sortOptions.direction === "asc" ? aValue - bValue : bValue - aValue;
 			}
-
 			if (aValue instanceof Date && bValue instanceof Date) {
-				return sortOptions.direction === "asc"
-					? aValue.getTime() - bValue.getTime()
-					: bValue.getTime() - aValue.getTime();
+				return sortOptions.direction === "asc" ? aValue.getTime() - bValue.getTime() : bValue.getTime() - aValue.getTime();
 			}
-
 			return 0;
 		});
 
@@ -196,18 +142,15 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		setCurrentPage(1);
 	}, [data, searchTerm, selectedEjecutivo, selectedCompania, selectedRamo, selectedStatus, dateRange, sortOptions]);
 
-	// Efecto para aplicar filtros
 	React.useEffect(() => {
 		applyFilters();
 	}, [applyFilters]);
 
-	// Paginación
 	const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
 	const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 	const endIndex = startIndex + ITEMS_PER_PAGE;
 	const currentPageData = filteredData.slice(startIndex, endIndex);
 
-	// Manejo de selección
 	const handleSelectRecord = (recordId: string) => {
 		const newSelected = new Set(selectedRecords);
 		if (newSelected.has(recordId)) {
@@ -221,10 +164,8 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 	const handleSelectAll = () => {
 		const allRecordIds = new Set(filteredData.map((r) => r.id!));
 		if (selectedRecords.size === filteredData.length) {
-			// Si todos están seleccionados, deseleccionar todos
 			setSelectedRecords(new Set());
 		} else {
-			// Si no todos están seleccionados, seleccionar todos
 			setSelectedRecords(allRecordIds);
 		}
 	};
@@ -235,26 +176,21 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 
 		const newSelected = new Set(selectedRecords);
 		if (allPageSelected) {
-			// Deseleccionar toda la página actual
 			currentPageIds.forEach((id) => newSelected.delete(id));
 		} else {
-			// Seleccionar toda la página actual
 			currentPageIds.forEach((id) => newSelected.add(id));
 		}
 		setSelectedRecords(newSelected);
 	};
 
-	// Verificar estados de selección
 	const isAllSelected = selectedRecords.size === filteredData.length && filteredData.length > 0;
 	const isPageSelected = currentPageData.length > 0 && currentPageData.every((r) => selectedRecords.has(r.id!));
 
-	// Seleccionar solo registros críticos
 	const handleSelectCritical = () => {
 		const criticalRecords = filteredData.filter((r) => r.status === "critical" || r.status === "due_soon");
 		setSelectedRecords(new Set(criticalRecords.map((r) => r.id!)));
 	};
 
-	// Manejo de ordenamiento
 	const handleSort = (field: keyof ProcessedInsuranceRecord) => {
 		setSortOptions((prev) => ({
 			field,
@@ -262,7 +198,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		}));
 	};
 
-	// Limpiar filtros
 	const clearFilters = () => {
 		setSearchTerm("");
 		setSelectedEjecutivo("all-ejecutivos");
@@ -272,7 +207,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		setDateRange({});
 	};
 
-	// Manejo del generador de cartas
 	const handleOpenLetterGenerator = () => {
 		if (selectedRecords.size === 0) {
 			alert("Por favor selecciona al menos un registro para generar cartas.");
@@ -283,11 +217,23 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 
 	const handlePDFGenerated = (result: PDFGenerationResult) => {
 		setPdfGenerationResult(result);
-		// Opcional: limpiar selección después de generar
+		if (result.success) {
+			const generatedIds = new Set<string>();
+			result.letters.forEach((letter) => {
+				letter.sourceRecordIds.forEach((id) => generatedIds.add(id));
+			});
+
+			const newData = data.map((record) => {
+				if (generatedIds.has(record.id!)) {
+					return { ...record, status: "sent" as InsuranceStatus };
+				}
+				return record;
+			});
+			onUpdateData(newData);
+		}
 		setSelectedRecords(new Set());
 	};
 
-	// Obtener badge de status
 	const getStatusBadge = (status: InsuranceStatus) => {
 		const variants = {
 			critical: "destructive",
@@ -306,21 +252,14 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 		};
 
 		return (
-			<Badge variant={variants[status]} className="text-xs">
+			<Badge variant={variants[status]} className={`text-xs ${status === "sent" ? "bg-green-600" : ""}`}>
 				{labels[status]}
 			</Badge>
 		);
 	};
 
-	// Si se está mostrando el generador de cartas
 	if (showLetterGenerator) {
-		return (
-			<LetterGenerator
-				selectedRecords={getSelectedRecords()}
-				onClose={() => setShowLetterGenerator(false)}
-				onGenerated={handlePDFGenerated}
-			/>
-		);
+		return <LetterGenerator selectedRecords={getSelectedRecords()} onClose={() => setShowLetterGenerator(false)} onGenerated={handlePDFGenerated} />;
 	}
 
 	return (
@@ -346,11 +285,7 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 						Seleccionar Críticos ({stats.critical + stats.dueSoon})
 					</Button>
 
-					<Button
-						onClick={handleOpenLetterGenerator}
-						disabled={selectedRecords.size === 0}
-						className="patria-btn-primary"
-					>
+					<Button onClick={handleOpenLetterGenerator} disabled={selectedRecords.size === 0} className="patria-btn-primary">
 						<FileText className="h-4 w-4 mr-2" />
 						Generar Cartas ({selectedRecords.size})
 					</Button>
@@ -362,25 +297,13 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</div>
 			</div>
 
-			{/* Resultado de generación de PDFs */}
 			{pdfGenerationResult && (
-				<Alert
-					className={
-						pdfGenerationResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-					}
-				>
+				<Alert className={pdfGenerationResult.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
 					<Package className="h-4 w-4" />
 					<AlertDescription>
 						{pdfGenerationResult.success ? (
 							<div className="text-green-800">
-								<div className="font-medium">
-									✅ {pdfGenerationResult.totalGenerated} cartas generadas exitosamente
-								</div>
-								{pdfGenerationResult.errors.length > 0 && (
-									<div className="text-sm mt-1">
-										{pdfGenerationResult.errors.length} errores encontrados
-									</div>
-								)}
+								<div className="font-medium">✅ {pdfGenerationResult.totalGenerated} cartas generadas exitosamente. Los registros han sido marcados como "Enviado".</div>
 							</div>
 						) : (
 							<div className="text-red-800">
@@ -392,7 +315,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</Alert>
 			)}
 
-			{/* Tarjetas de estadísticas */}
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
 				<Card>
 					<CardContent className="p-4 text-center">
@@ -400,35 +322,30 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 						<div className="text-sm text-gray-600">Total</div>
 					</CardContent>
 				</Card>
-
 				<Card className="border-red-200">
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-red-600">{stats.critical}</div>
 						<div className="text-sm text-gray-600">Críticos</div>
 					</CardContent>
 				</Card>
-
 				<Card className="border-yellow-200">
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-yellow-600">{stats.dueSoon}</div>
 						<div className="text-sm text-gray-600">Próximos</div>
 					</CardContent>
 				</Card>
-
 				<Card className="border-blue-200">
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-blue-600">{stats.pending}</div>
 						<div className="text-sm text-gray-600">Pendientes</div>
 					</CardContent>
 				</Card>
-
 				<Card className="border-gray-200">
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-gray-600">{stats.expired}</div>
 						<div className="text-sm text-gray-600">Vencidos</div>
 					</CardContent>
 				</Card>
-
 				<Card className="border-green-200">
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-green-600">{stats.sent}</div>
@@ -437,7 +354,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</Card>
 			</div>
 
-			{/* Filtros */}
 			<Card>
 				<CardHeader>
 					<div className="flex items-center justify-between">
@@ -452,21 +368,13 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</CardHeader>
 				<CardContent>
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-						{/* Búsqueda */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Buscar</label>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-								<Input
-									placeholder="Asegurado, póliza, compañía..."
-									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
-									className="pl-10"
-								/>
+								<Input placeholder="Asegurado, póliza, compañía..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
 							</div>
 						</div>
-
-						{/* Ejecutivo */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Ejecutivo</label>
 							<Select value={selectedEjecutivo} onValueChange={setSelectedEjecutivo}>
@@ -487,8 +395,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 								</SelectContent>
 							</Select>
 						</div>
-
-						{/* Compañía */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Compañía</label>
 							<Select value={selectedCompania} onValueChange={setSelectedCompania}>
@@ -509,8 +415,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 								</SelectContent>
 							</Select>
 						</div>
-
-						{/* Ramo */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Ramo</label>
 							<Select value={selectedRamo} onValueChange={setSelectedRamo}>
@@ -531,8 +435,6 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 								</SelectContent>
 							</Select>
 						</div>
-
-						{/* Estado/Status */}
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Estado</label>
 							<Select
@@ -562,22 +464,17 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 				</CardContent>
 			</Card>
 
-			{/* Tabla de datos */}
 			<Card>
 				<CardHeader>
 					<div className="flex items-center justify-between">
 						<div>
 							<CardTitle>Registros de Seguros</CardTitle>
 							<CardDescription>
-								Mostrando {startIndex + 1}-{Math.min(endIndex, filteredData.length)} de{" "}
-								{filteredData.length} registros
+								Mostrando {startIndex + 1}-{Math.min(endIndex, filteredData.length)} de {filteredData.length} registros
 							</CardDescription>
 						</div>
 						<div className="flex items-center space-x-2">
-							<Checkbox
-								checked={selectedRecords.size === currentPageData.length && currentPageData.length > 0}
-								onCheckedChange={handleSelectAll}
-							/>
+							<Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
 							<span className="text-sm text-gray-600">Seleccionar Todo</span>
 						</div>
 					</div>
@@ -592,84 +489,37 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 											<Checkbox checked={isPageSelected} onCheckedChange={handleSelectPage} />
 										</div>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">
-										<button
-											onClick={() => handleSort("asegurado")}
-											className="flex items-center space-x-1 hover:text-patria-blue"
-										>
+										<button onClick={() => handleSort("asegurado")} className="flex items-center space-x-1 hover:text-patria-blue">
 											<span>Asegurado</span>
-											{sortOptions.field === "asegurado" &&
-												(sortOptions.direction === "asc" ? (
-													<SortAsc className="h-4 w-4" />
-												) : (
-													<SortDesc className="h-4 w-4" />
-												))}
+											{sortOptions.field === "asegurado" && (sortOptions.direction === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
 										</button>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">
-										<button
-											onClick={() => handleSort("compania")}
-											className="flex items-center space-x-1 hover:text-patria-blue"
-										>
+										<button onClick={() => handleSort("compania")} className="flex items-center space-x-1 hover:text-patria-blue">
 											<span>Compañía</span>
-											{sortOptions.field === "compania" &&
-												(sortOptions.direction === "asc" ? (
-													<SortAsc className="h-4 w-4" />
-												) : (
-													<SortDesc className="h-4 w-4" />
-												))}
+											{sortOptions.field === "compania" && (sortOptions.direction === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
 										</button>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">
-										<button
-											onClick={() => handleSort("ramo")}
-											className="flex items-center space-x-1 hover:text-patria-blue"
-										>
+										<button onClick={() => handleSort("ramo")} className="flex items-center space-x-1 hover:text-patria-blue">
 											<span>Ramo</span>
-											{sortOptions.field === "ramo" &&
-												(sortOptions.direction === "asc" ? (
-													<SortAsc className="h-4 w-4" />
-												) : (
-													<SortDesc className="h-4 w-4" />
-												))}
+											{sortOptions.field === "ramo" && (sortOptions.direction === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
 										</button>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">No. Póliza</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">
-										<button
-											onClick={() => handleSort("finDeVigencia")}
-											className="flex items-center space-x-1 hover:text-patria-blue"
-										>
+										<button onClick={() => handleSort("finDeVigencia")} className="flex items-center space-x-1 hover:text-patria-blue">
 											<span>Vencimiento</span>
-											{sortOptions.field === "finDeVigencia" &&
-												(sortOptions.direction === "asc" ? (
-													<SortAsc className="h-4 w-4" />
-												) : (
-													<SortDesc className="h-4 w-4" />
-												))}
+											{sortOptions.field === "finDeVigencia" && (sortOptions.direction === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
 										</button>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">
-										<button
-											onClick={() => handleSort("daysUntilExpiry")}
-											className="flex items-center space-x-1 hover:text-patria-blue"
-										>
+										<button onClick={() => handleSort("daysUntilExpiry")} className="flex items-center space-x-1 hover:text-patria-blue">
 											<span>Días Restantes</span>
-											{sortOptions.field === "daysUntilExpiry" &&
-												(sortOptions.direction === "asc" ? (
-													<SortAsc className="h-4 w-4" />
-												) : (
-													<SortDesc className="h-4 w-4" />
-												))}
+											{sortOptions.field === "daysUntilExpiry" && (sortOptions.direction === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />)}
 										</button>
 									</th>
-
 									<th className="text-left p-3 font-medium text-gray-900">Estado</th>
 									<th className="text-left p-3 font-medium text-gray-900">Ejecutivo</th>
 									<th className="text-left p-3 font-medium text-gray-900">Prima</th>
@@ -678,73 +528,38 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 							</thead>
 							<tbody>
 								{currentPageData.map((record) => (
-									<tr key={record.id} className="border-b border-gray-100 hover:bg-gray-50">
+									<tr key={record.id} className={`border-b border-gray-100 transition-colors ${record.status === "sent" ? "bg-green-100 hover:bg-green-200" : "hover:bg-gray-50"}`}>
 										<td className="p-3">
-											<Checkbox
-												checked={selectedRecords.has(record.id!)}
-												onCheckedChange={() => handleSelectRecord(record.id!)}
-											/>
+											<Checkbox checked={selectedRecords.has(record.id!)} onCheckedChange={() => handleSelectRecord(record.id!)} disabled={record.status === "sent"} />
 										</td>
-
 										<td className="p-3">
-											<div className="font-medium text-gray-900 max-w-64 truncate">
-												{record.asegurado}
-											</div>
-											{record.correoODireccion && (
-												<div className="text-sm text-gray-500 max-w-64 truncate">
-													{record.correoODireccion}
-												</div>
-											)}
+											<div className="font-medium text-gray-900 max-w-64 truncate">{record.asegurado}</div>
+											{record.correoODireccion && <div className="text-sm text-gray-500 max-w-64 truncate">{record.correoODireccion}</div>}
 										</td>
-
 										<td className="p-3">
 											<div className="font-medium text-gray-900">{record.compania}</div>
 										</td>
-
 										<td className="p-3">
-											<div className="font-medium text-gray-900 max-w-48 truncate">
-												{record.ramo}
+											<div className="font-medium text-gray-900 max-w-48 truncate">{record.ramo}</div>
+										</td>
+										<td className="p-3">
+											<code className="text-sm bg-gray-100 px-2 py-1 rounded max-w-40 truncate block">{record.noPoliza}</code>
+										</td>
+										<td className="p-3">
+											<div className="text-gray-900">{formatDate(new Date(record.finDeVigencia))}</div>
+										</td>
+										<td className="p-3">
+											<div className={`font-medium ${record.daysUntilExpiry <= 5 ? "text-red-600" : record.daysUntilExpiry <= 30 ? "text-yellow-600" : "text-gray-600"}`}>
+												{record.daysUntilExpiry >= 0 ? `${record.daysUntilExpiry} días` : "Vencido"}
 											</div>
 										</td>
-
-										<td className="p-3">
-											<code className="text-sm bg-gray-100 px-2 py-1 rounded max-w-40 truncate block">
-												{record.noPoliza}
-											</code>
-										</td>
-
-										<td className="p-3">
-											<div className="text-gray-900">
-												{formatDate(new Date(record.finDeVigencia))}
-											</div>
-										</td>
-
-										<td className="p-3">
-											<div
-												className={`font-medium ${
-													record.daysUntilExpiry <= 5
-														? "text-red-600"
-														: record.daysUntilExpiry <= 30
-														? "text-yellow-600"
-														: "text-gray-600"
-												}`}
-											>
-												{record.daysUntilExpiry > 0
-													? `${record.daysUntilExpiry} días`
-													: "Vencido"}
-											</div>
-										</td>
-
 										<td className="p-3">{getStatusBadge(record.status)}</td>
-
 										<td className="p-3">
 											<div className="text-gray-900">{record.ejecutivo}</div>
 										</td>
-
 										<td className="p-3">
 											<div className="text-gray-900">{formatCurrency(record.prima || 0)}</div>
 										</td>
-
 										<td className="p-3">
 											<div className="flex space-x-1">
 												<Button variant="ghost" size="sm">
@@ -757,6 +572,7 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 														setSelectedRecords(new Set([record.id!]));
 														handleOpenLetterGenerator();
 													}}
+													disabled={record.status === "sent"}
 												>
 													<Mail className="h-4 w-4" />
 												</Button>
@@ -768,32 +584,17 @@ export default function Dashboard({ data, onBack }: DashboardProps) {
 						</table>
 					</div>
 
-					{/* Paginación */}
 					{totalPages > 1 && (
 						<div className="flex items-center justify-between mt-6">
 							<div className="text-sm text-gray-600">
 								Página {currentPage} de {totalPages}
 							</div>
-
 							<div className="flex space-x-2">
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-									disabled={currentPage === 1}
-								>
-									<ChevronLeft className="h-4 w-4" />
-									Anterior
+								<Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+									<ChevronLeft className="h-4 w-4" /> Anterior
 								</Button>
-
-								<Button
-									variant="outline"
-									size="sm"
-									onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-									disabled={currentPage === totalPages}
-								>
-									Siguiente
-									<ChevronRight className="h-4 w-4" />
+								<Button variant="outline" size="sm" onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>
+									Siguiente <ChevronRight className="h-4 w-4" />
 								</Button>
 							</div>
 						</div>

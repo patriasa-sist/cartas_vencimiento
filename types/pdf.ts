@@ -4,6 +4,7 @@ import { ProcessedInsuranceRecord } from "./insurance";
 
 export interface LetterData {
 	id: string;
+	sourceRecordIds: string[]; // NUEVO: IDs de los registros originales
 	templateType: "salud" | "general";
 	referenceNumber: string;
 	date: string;
@@ -26,10 +27,10 @@ export interface PolicyForLetter {
 	branch: string;
 	insuredValue?: number;
 	premium?: number;
-	insuredMembers?: string[]; // NUEVO: Para listar asegurados en pólizas de salud
+	insuredMembers?: string[]; // Para listar asegurados en pólizas de salud
 	manualFields?: {
-		insuredMatter?: string; // NUEVO: Materia asegurada editable
-		originalInsuredMatter?: string; // NUEVO: Para guardar el valor original
+		insuredMatter?: string;
+		originalInsuredMatter?: string;
 		specificConditions?: string;
 		deductibles?: number;
 		deductiblesCurrency?: "Bs." | "$us.";
@@ -53,6 +54,7 @@ export interface PDFGenerationOptions {
 
 export interface GeneratedLetter {
 	letterId: string;
+	sourceRecordIds: string[]; // NUEVO: IDs de los registros originales
 	clientName: string;
 	templateType: "salud" | "general";
 	fileName: string;

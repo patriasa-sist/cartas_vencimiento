@@ -40,25 +40,21 @@ export default function HomePage() {
 		setCurrentView("dashboard");
 	};
 
-	// Calcular estadísticas rápidas para la vista de resumen
 	const stats = React.useMemo(() => {
 		if (insuranceData.length === 0) return null;
-
 		const total = insuranceData.length;
 		const critical = insuranceData.filter((r) => r.status === "critical").length;
 		const dueSoon = insuranceData.filter((r) => r.status === "due_soon").length;
 		const pending = insuranceData.filter((r) => r.status === "pending").length;
 		const expired = insuranceData.filter((r) => r.status === "expired").length;
 		const totalValue = insuranceData.reduce((sum, r) => sum + r.valorAsegurado, 0);
-
 		return { total, critical, dueSoon, pending, expired, totalValue };
 	}, [insuranceData]);
 
-	// Renderizar vista actual
 	const renderCurrentView = () => {
 		switch (currentView) {
 			case "dashboard":
-				return <Dashboard data={insuranceData} onBack={resetToUpload} />;
+				return <Dashboard data={insuranceData} onBack={resetToUpload} onUpdateData={setInsuranceData} />;
 
 			case "critical-alerts":
 				return <CriticalAlerts data={insuranceData} onBack={goToDashboard} />;
@@ -67,13 +63,10 @@ export default function HomePage() {
 			default:
 				return (
 					<div className="space-y-8">
-						{/* Título de bienvenida */}
 						<div className="text-center">
 							<h2 className="text-3xl font-bold text-gray-900 mb-4">Bienvenido al Sistema de Cartas de Vencimiento</h2>
 							<p className="text-lg text-gray-600 max-w-2xl mx-auto">Sube tu archivo Excel con los datos de seguros y automatiza la creación y envío de cartas de vencimiento a tus clientes.</p>
 						</div>
-
-						{/* Características del sistema */}
 						<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
 							<Card className="patria-card">
 								<CardContent className="p-6 text-center">
@@ -82,7 +75,6 @@ export default function HomePage() {
 									<p className="text-sm text-gray-600">Procesa archivos Excel con validación automática</p>
 								</CardContent>
 							</Card>
-
 							<Card className="patria-card">
 								<CardContent className="p-6 text-center">
 									<BarChart3 className="h-12 w-12 text-patria-green mx-auto mb-3" />
@@ -90,7 +82,6 @@ export default function HomePage() {
 									<p className="text-sm text-gray-600">Visualiza y filtra datos de manera intuitiva</p>
 								</CardContent>
 							</Card>
-
 							<Card className="patria-card">
 								<CardContent className="p-6 text-center">
 									<Mail className="h-12 w-12 text-patria-blue mx-auto mb-3" />
@@ -98,7 +89,6 @@ export default function HomePage() {
 									<p className="text-sm text-gray-600">Genera y envía cartas por email o descarga en ZIP</p>
 								</CardContent>
 							</Card>
-
 							<Card className="patria-card">
 								<CardContent className="p-6 text-center">
 									<Users className="h-12 w-12 text-patria-green mx-auto mb-3" />
@@ -107,8 +97,6 @@ export default function HomePage() {
 								</CardContent>
 							</Card>
 						</div>
-
-						{/* Error display */}
 						{error && (
 							<Card className="border-red-200 bg-red-50">
 								<CardContent className="p-4">
@@ -120,11 +108,7 @@ export default function HomePage() {
 								</CardContent>
 							</Card>
 						)}
-
-						{/* File upload component */}
 						<FileUpload onDataLoaded={handleDataLoaded} onError={handleError} />
-
-						{/* Instrucciones */}
 						<Card className="patria-card">
 							<CardHeader>
 								<CardTitle className="text-patria-blue">Instrucciones</CardTitle>
@@ -185,7 +169,6 @@ export default function HomePage() {
 
 	return (
 		<div className="min-h-screen bg-gray-50">
-			{/* Header */}
 			<header className="patria-gradient shadow-lg">
 				<div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between h-16">
@@ -198,8 +181,6 @@ export default function HomePage() {
 								<p className="text-blue-100 text-sm">Sistema de Cartas de Vencimiento</p>
 							</div>
 						</div>
-
-						{/* Navegación del header */}
 						{currentView !== "upload" && (
 							<div className="flex items-center space-x-3">
 								{stats && stats.critical > 0 && currentView !== "critical-alerts" && (
@@ -208,14 +189,12 @@ export default function HomePage() {
 										{stats.critical} Críticos
 									</Button>
 								)}
-
 								{currentView !== "dashboard" && (
 									<Button variant="ghost" onClick={goToDashboard} className="text-white hover:bg-white/10">
 										<BarChart3 className="h-4 w-4 mr-2" />
 										Dashboard
 									</Button>
 								)}
-
 								<Button variant="ghost" onClick={resetToUpload} className="text-white hover:bg-white/10">
 									<FileSpreadsheet className="h-4 w-4 mr-2" />
 									Nuevo Archivo
@@ -225,7 +204,6 @@ export default function HomePage() {
 					</div>
 				</div>
 			</header>
-
 			<main className="w-full px-4 sm:px-6 lg:px-8 py-8">{renderCurrentView()}</main>
 		</div>
 	);

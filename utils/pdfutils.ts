@@ -68,6 +68,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 		const firstRecord = groupRecords[0];
 		const templateType = determineTemplateType(firstRecord.ramo);
 		let policies: PolicyForLetter[] = [];
+		const sourceRecordIds = groupRecords.map((r) => r.id!).filter((id) => id); // Obtenemos los IDs
 
 		if (templateType === "salud") {
 			// Sub-agrupación para pólizas de SALUD por número de póliza
@@ -139,6 +140,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 
 		return {
 			id: `letter_${Date.now()}_${index}`,
+			sourceRecordIds, // Añadido
 			templateType,
 			referenceNumber: generateReferenceNumber(),
 			date: formatDate(new Date()),
