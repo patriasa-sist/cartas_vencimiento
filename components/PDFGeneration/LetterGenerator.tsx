@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer } from "lucide-react";
+import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -330,7 +330,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			document.body.removeChild(link);
 			URL.revokeObjectURL(url);
 
-			// Trigger onGenerated for single download
 			const result: PDFGenerationResult = {
 				success: true,
 				letters: [
@@ -338,6 +337,8 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						letterId: letter.id,
 						sourceRecordIds: letter.sourceRecordIds,
 						clientName: letter.client.name,
+						clientPhone: letter.client.phone,
+						clientEmail: letter.client.email,
 						templateType: letter.templateType,
 						fileName,
 						pdfBlob,
@@ -375,8 +376,10 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 					generatedLetters.push({
 						letterId: letter.id,
-						sourceRecordIds: letter.sourceRecordIds, // Pasamos los IDs
+						sourceRecordIds: letter.sourceRecordIds,
 						clientName: letter.client.name,
+						clientPhone: letter.client.phone,
+						clientEmail: letter.client.email,
 						templateType: letter.templateType,
 						fileName,
 						pdfBlob,
@@ -558,6 +561,18 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 		onSaveEdit(editedLetter);
 	};
 
+	const handleClientInfoChange = (field: "phone" | "email", value: string) => {
+		const updatedLetterData = {
+			...editedLetter,
+			client: {
+				...editedLetter.client,
+				[field]: value,
+			},
+		};
+		setEditedLetter(updatedLetterData);
+		onUpdateLetterData(letter.id, updatedLetterData);
+	};
+
 	const updatePolicy = (policyIndex: number, field: keyof NonNullable<PolicyForLetter["manualFields"]>, value: any) => {
 		const updatedPolicies = editedLetter.policies.map((policy, index) => {
 			if (index === policyIndex) {
@@ -672,14 +687,33 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 			<CardContent>
 				<div className="mb-4 p-3 bg-white rounded border">
 					<h4 className="font-medium text-gray-900 mb-2">Información del Cliente</h4>
-					<div className="grid grid-cols-2 gap-4 text-sm">
-						<div>
-							<span className="text-gray-600">Teléfono:</span> {letter.client.phone || "No especificado"}
+					{isEditing ? (
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+							<div>
+								<label className="text-xs text-gray-600 block mb-1 flex items-center">
+									<Phone className="h-3 w-3 mr-1" />
+									Teléfono
+								</label>
+								<Input value={editedLetter.client.phone || ""} onChange={(e) => handleClientInfoChange("phone", e.target.value)} placeholder="No especificado" className="text-sm h-8" />
+							</div>
+							<div>
+								<label className="text-xs text-gray-600 block mb-1 flex items-center">
+									<Mail className="h-3 w-3 mr-1" />
+									Email
+								</label>
+								<Input value={editedLetter.client.email || ""} onChange={(e) => handleClientInfoChange("email", e.target.value)} placeholder="No especificado" className="text-sm h-8" />
+							</div>
 						</div>
-						<div>
-							<span className="text-gray-600">Email:</span> {letter.client.email || "No especificado"}
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+							<div>
+								<span className="text-gray-600">Teléfono:</span> {letter.client.phone || "No especificado"}
+							</div>
+							<div>
+								<span className="text-gray-600">Email:</span> {letter.client.email || "No especificado"}
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 
 				<div className="space-y-3">

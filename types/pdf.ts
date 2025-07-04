@@ -54,8 +54,10 @@ export interface PDFGenerationOptions {
 
 export interface GeneratedLetter {
 	letterId: string;
-	sourceRecordIds: string[]; // NUEVO: IDs de los registros originales
+	sourceRecordIds: string[];
 	clientName: string;
+	clientPhone?: string; // Dato de cliente actualizado
+	clientEmail?: string; // Dato de cliente actualizado
 	templateType: "salud" | "general";
 	fileName: string;
 	pdfBlob?: Blob;

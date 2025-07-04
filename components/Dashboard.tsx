@@ -218,18 +218,25 @@ export default function Dashboard({ data, onBack, onUpdateData }: DashboardProps
 	const handlePDFGenerated = (result: PDFGenerationResult) => {
 		setPdfGenerationResult(result);
 		if (result.success) {
-			const generatedIds = new Set<string>();
-			result.letters.forEach((letter) => {
-				letter.sourceRecordIds.forEach((id) => generatedIds.add(id));
-			});
+			const updatedData = data.map((record) => {
+				// Find if this record was part of any generated letter
+				const generatedLetter = result.letters.find((l) => l.sourceRecordIds.includes(record.id!));
 
-			const newData = data.map((record) => {
-				if (generatedIds.has(record.id!)) {
-					return { ...record, status: "sent" as InsuranceStatus };
+				if (generatedLetter) {
+					// If it was, update it with the new status and potentially new client info
+					return {
+						...record,
+						status: "sent" as InsuranceStatus,
+						telefono: generatedLetter.clientPhone || record.telefono,
+						correoODireccion: generatedLetter.clientEmail || record.correoODireccion,
+					};
 				}
+
+				// Otherwise, return the original record
 				return record;
 			});
-			onUpdateData(newData);
+
+			onUpdateData(updatedData);
 		}
 		setSelectedRecords(new Set());
 	};
