@@ -1,12 +1,5 @@
 import * as ExcelJS from "exceljs";
-import {
-	InsuranceRecord,
-	ProcessedInsuranceRecord,
-	ExcelUploadResult,
-	InsuranceStatus,
-	VALIDATION_RULES,
-	SYSTEM_CONSTANTS,
-} from "@/types/insurance";
+import { InsuranceRecord, ProcessedInsuranceRecord, ExcelUploadResult, InsuranceStatus, VALIDATION_RULES, SYSTEM_CONSTANTS } from "@/types/insurance";
 
 /**
  * Convierte fecha serial de Excel a objeto Date - CORREGIDO
@@ -17,26 +10,13 @@ export function excelDateToJSDate(excelDate: number | Date): Date {
 		let tiempoActual = new Date(1899, 11, 30).getTime();
 		// Si ya es Date pero viene de Excel, convertir a número para aplicar corrección
 		const excelSerial = (tiempoMili - tiempoActual) / (24 * 60 * 60 * 1000);
-
-		// logs de pruebas
-		// console.log("excelDate: ", excelDate);
-		// console.log("tiempoMili: ", tiempoMili);
-		// console.log("tiempoActual: ", tiempoActual);
-		// console.log("excelSerial: ", excelSerial);
-
 		return excelDateToJSDate(excelSerial);
 	}
 
-	// console.log("numero procesado: ", excelDate);
-
-	// Corrección del bug de Excel: si la fecha serial es > 59 (después del 28 feb 1900), restar 1 día porque Excel incorrectamente cuenta el 29 feb 1900 que no existió
 	const correctedSerial = excelDate > 59 ? excelDate - 1 : excelDate;
-
-	const excelEpoch = new Date(1900, 0, 1); // Fecha base: 1 enero 1900 en Excel
-	const resultDate = new Date(excelEpoch); // inicializacion cualquiera
-	resultDate.setDate(excelEpoch.getDate() + correctedSerial); // Suma de dias
-
-	//console.log("fecha corregida: ", resultDate);
+	const excelEpoch = new Date(1900, 0, 1);
+	const resultDate = new Date(excelEpoch);
+	resultDate.setDate(excelEpoch.getDate() + correctedSerial);
 	return resultDate;
 }
 
@@ -63,10 +43,26 @@ export function determineStatus(daysUntilExpiry: number): InsuranceStatus {
 }
 
 /**
- * Limpia y normaliza strings
+ * Limpia y normaliza strings, manejando texto enriquecido de Excel.
+ * Esta función es clave para prevenir errores de '[object Object]' y mejorar la seguridad.
  */
 export function cleanString(value: any): string {
-	if (value === null || value === undefined) return "";
+	if (value === null || value === undefined) {
+		return "";
+	}
+
+	// Caso 1: El valor es un objeto de texto enriquecido (hyperlink de Excel)
+	// { text: 'user@example.com', hyperlink: 'mailto:user@example.com' }
+	if (typeof value === "object" && value !== null && "text" in value) {
+		return String(value.text).trim();
+	}
+
+	// Caso 2: El valor es un objeto con una propiedad 'result' (fórmulas de Excel)
+	if (typeof value === "object" && value !== null && "result" in value) {
+		return String(value.result).trim();
+	}
+
+	// Caso 3: Es cualquier otro tipo de dato, lo convertimos a string de forma segura.
 	return String(value).trim();
 }
 
@@ -76,7 +72,6 @@ export function cleanString(value: any): string {
 export function parseNumber(value: any): number {
 	if (typeof value === "number") return value;
 	if (typeof value === "string") {
-		// Remover caracteres no numéricos excepto punto y coma
 		const cleaned = value.replace(/[^\d.-]/g, "");
 		const parsed = parseFloat(cleaned);
 		return isNaN(parsed) ? 0 : parsed;
@@ -103,14 +98,10 @@ export function validateRecord(record: any, rowIndex: number): { isValid: boolea
 				case "string":
 					const strValue = cleanString(value);
 					if (rule.minLength && strValue.length < rule.minLength) {
-						errors.push(
-							`Fila ${rowIndex}: "${rule.field}" debe tener al menos ${rule.minLength} caracteres`
-						);
+						errors.push(`Fila ${rowIndex}: "${rule.field}" debe tener al menos ${rule.minLength} caracteres`);
 					}
 					if (rule.maxLength && strValue.length > rule.maxLength) {
-						errors.push(
-							`Fila ${rowIndex}: "${rule.field}" no puede tener más de ${rule.maxLength} caracteres`
-						);
+						errors.push(`Fila ${rowIndex}: "${rule.field}" no puede tener más de ${rule.maxLength} caracteres`);
 					}
 					break;
 
@@ -178,25 +169,19 @@ export function mapExcelRowToRecord(row: any): InsuranceRecord {
 }
 
 /**
- * Procesa un registro para agregar campos calculados - ACTUALIZADO
+ * Procesa un registro para agregar campos calculados
  */
 export function processRecord(record: InsuranceRecord, index: number): ProcessedInsuranceRecord {
-	// Convertir fecha si es necesario
 	let expiryDate: Date;
-	// si finDeVigencia es un number o Date convertir y resolver bug de año bisciesto
 	if (typeof record.finDeVigencia === "number" || record.finDeVigencia instanceof Date) {
-		//console.log("fecha a convertir: ", record.finDeVigencia);
 		expiryDate = excelDateToJSDate(record.finDeVigencia);
 	} else if (typeof record.finDeVigencia === "string") {
-		//console.log("fecha string");
 		expiryDate = new Date(record.finDeVigencia);
-		// Si el parsing falla, intentar diferentes formatos
 		if (isNaN(expiryDate.getTime())) {
-			// Formato DD/MM/YYYY
 			const parts = record.finDeVigencia.split("/");
 			if (parts.length === 3) {
 				const day = parseInt(parts[0]);
-				const month = parseInt(parts[1]) - 1; // JavaScript months are 0-based
+				const month = parseInt(parts[1]) - 1;
 				const year = parseInt(parts[2]);
 				expiryDate = new Date(year, month, day);
 			}
@@ -219,41 +204,29 @@ export function processRecord(record: InsuranceRecord, index: number): Processed
 }
 
 /**
- * Función principal para procesar archivo Excel usando ExcelJS (más seguro)
+ * Función principal para procesar archivo Excel
  */
 export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 	try {
-		// Validar tamaño del archivo
 		if (file.size > SYSTEM_CONSTANTS.MAX_UPLOAD_SIZE) {
 			return {
 				success: false,
-				errors: [
-					`El archivo es demasiado grande. Tamaño máximo: ${
-						SYSTEM_CONSTANTS.MAX_UPLOAD_SIZE / 1024 / 1024
-					}MB`,
-				],
+				errors: [`El archivo es demasiado grande. Tamaño máximo: ${SYSTEM_CONSTANTS.MAX_UPLOAD_SIZE / 1024 / 1024}MB`],
 			};
 		}
 
-		// Validar tipo de archivo
 		const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
 		if (!SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES.includes(fileExtension)) {
 			return {
 				success: false,
-				errors: [
-					`Tipo de archivo no soportado. Tipos permitidos: ${SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES.join(
-						", "
-					)}`,
-				],
+				errors: [`Tipo de archivo no soportado. Tipos permitidos: ${SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES.join(", ")}`],
 			};
 		}
 
-		// Leer archivo con ExcelJS
 		const arrayBuffer = await file.arrayBuffer();
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(arrayBuffer);
 
-		// Verificar que el archivo tenga hojas
 		if (workbook.worksheets.length === 0) {
 			return {
 				success: false,
@@ -261,10 +234,8 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			};
 		}
 
-		// Usar la primera hoja (usualmente el mes actual)
 		const worksheet = workbook.worksheets[0];
 
-		// Verificar que tenga datos
 		if (worksheet.rowCount < 2) {
 			return {
 				success: false,
@@ -272,7 +243,6 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			};
 		}
 
-		// Extraer headers de la primera fila
 		const headerRow = worksheet.getRow(1);
 		const headers: string[] = [];
 
@@ -280,12 +250,9 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			headers[colNumber] = cell.value ? cell.value.toString().trim() : "";
 		});
 
-		// Verificar headers requeridos
 		const requiredHeaders = ["FIN DE VIGENCIA", "COMPAÑÍA", "NO. PÓLIZA", "ASEGURADO", "EJECUTIVO"];
 
-		const missingHeaders = requiredHeaders.filter(
-			(header) => !headers.some((h) => h && h.toUpperCase().includes(header.toUpperCase()))
-		);
+		const missingHeaders = requiredHeaders.filter((header) => !headers.some((h) => h && h.toUpperCase().includes(header.toUpperCase())));
 
 		if (missingHeaders.length > 0) {
 			return {
@@ -294,15 +261,12 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			};
 		}
 
-		// Procesar cada fila de datos
 		const processedRecords: ProcessedInsuranceRecord[] = [];
 		const errors: string[] = [];
 		const warnings: string[] = [];
 
 		for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
 			const row = worksheet.getRow(rowNumber);
-
-			// Crear objeto con headers como keys
 			const rowObject: any = {};
 			let hasData = false;
 
@@ -314,44 +278,32 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 				}
 			});
 
-			// Saltar filas completamente vacías
 			if (!hasData) {
 				warnings.push(`Fila ${rowNumber}: Fila vacía, se omitirá`);
 				continue;
 			}
 
 			try {
-				// Mapear a nuestro tipo
 				const insuranceRecord = mapExcelRowToRecord(rowObject);
-
-				// Validar registro
 				const validation = validateRecord(insuranceRecord, rowNumber);
 				if (!validation.isValid) {
 					errors.push(...validation.errors);
 					continue;
 				}
-
-				// Procesar y agregar campos calculados
 				const processedRecord = processRecord(insuranceRecord, rowNumber - 2);
 				processedRecords.push(processedRecord);
 			} catch (error) {
-				errors.push(
-					`Fila ${rowNumber}: Error al procesar - ${
-						error instanceof Error ? error.message : "Error desconocido"
-					}`
-				);
+				errors.push(`Fila ${rowNumber}: Error al procesar - ${error instanceof Error ? error.message : "Error desconocido"}`);
 			}
 		}
 
-		// Validaciones adicionales
-		if (processedRecords.length === 0) {
+		if (processedRecords.length === 0 && errors.length > 0) {
 			return {
 				success: false,
 				errors: ["No se pudieron procesar registros válidos", ...errors],
 			};
 		}
 
-		// Verificar duplicados por número de póliza
 		const policyNumbers = new Set<string>();
 		const duplicates: string[] = [];
 
@@ -372,23 +324,20 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 			data: processedRecords,
 			errors: errors.length > 0 ? errors : undefined,
 			warnings: warnings.length > 0 ? warnings : undefined,
-			totalRecords: worksheet.rowCount - 1, // -1 for header
+			totalRecords: worksheet.rowCount - 1,
 			validRecords: processedRecords.length,
 		};
 	} catch (error) {
 		console.error("Error procesando archivo Excel:", error);
 		return {
 			success: false,
-			errors: [
-				"Error al procesar el archivo Excel",
-				error instanceof Error ? error.message : "Error desconocido",
-			],
+			errors: ["Error al procesar el archivo Excel", error instanceof Error ? error.message : "Error desconocido"],
 		};
 	}
 }
 
 /**
- * Filtra registros que necesitan carta de vencimiento (30 días antes)
+ * Filtra registros que necesitan carta de vencimiento
  */
 export function getRecordsNeedingNotification(records: ProcessedInsuranceRecord[]): ProcessedInsuranceRecord[] {
 	return records.filter((record) => {
@@ -398,7 +347,7 @@ export function getRecordsNeedingNotification(records: ProcessedInsuranceRecord[
 }
 
 /**
- * Filtra registros críticos (5 días o menos)
+ * Filtra registros críticos
  */
 export function getCriticalRecords(records: ProcessedInsuranceRecord[]): ProcessedInsuranceRecord[] {
 	return records.filter((record) => record.status === "critical");
@@ -407,16 +356,10 @@ export function getCriticalRecords(records: ProcessedInsuranceRecord[]): Process
 /**
  * Obtiene valores únicos de una propiedad para filtros
  */
-export function getUniqueValues<T extends keyof ProcessedInsuranceRecord>(
-	records: ProcessedInsuranceRecord[],
-	property: T
-): string[] {
+export function getUniqueValues<T extends keyof ProcessedInsuranceRecord>(records: ProcessedInsuranceRecord[], property: T): string[] {
 	const values = records
 		.map((record) => record[property])
-		.filter(
-			(value): value is string =>
-				typeof value === "string" && value.trim() !== "" && value !== null && value !== undefined
-		)
+		.filter((value): value is string => typeof value === "string" && value.trim() !== "" && value !== null && value !== undefined)
 		.map((value) => value.trim());
 
 	return [...new Set(values)].sort();
@@ -451,7 +394,6 @@ export function generateLetterFileName(record: ProcessedInsuranceRecord): string
 	const today = new Date();
 	const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
-	// Limpiar nombre del asegurado
 	const cleanName = record.asegurado
 		.replace(/[^a-zA-Z\s]/g, "")
 		.trim()
