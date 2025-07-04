@@ -13,10 +13,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProcessedInsuranceRecord } from "@/types/insurance";
 import { LetterData, GeneratedLetter, PDFGenerationResult, PolicyForLetter } from "@/types/pdf";
 import { groupRecordsForLetters, validateRecordForPDF, generateFileName, formatUSD, formatCurrency, determineTemplateType } from "@/utils/pdfutils";
+import { cleanPhoneNumber, createWhatsAppMessage } from "@/utils/whatsapp"; // Importar utilidades de WhatsApp
 import { pdf } from "@react-pdf/renderer";
 import { HealthTemplate } from "./HealthTemplate";
 import { GeneralTemplate } from "./GeneralTemplate";
 import JSZip from "jszip";
+
+// Icono de WhatsApp como componente SVG
+const WhatsAppIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+		<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+	</svg>
+);
 
 interface LetterGeneratorProps {
 	selectedRecords: ProcessedInsuranceRecord[];
@@ -312,6 +320,17 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		setPreviewLetter(null);
 	};
 
+	const downloadBlob = (blob: Blob, fileName: string) => {
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = fileName;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+	};
+
 	const handleDownloadSingle = async (letterId: string) => {
 		const letter = letters.find((l) => l.id === letterId);
 		if (!letter) return;
@@ -320,15 +339,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			setIsGenerating(true);
 			const pdfBlob = await generateSinglePDF(letter);
 			const fileName = generateFileName(letter.client.name, letter.templateType);
-
-			const url = URL.createObjectURL(pdfBlob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = fileName;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
+			downloadBlob(pdfBlob, fileName);
 
 			const result: PDFGenerationResult = {
 				success: true,
@@ -397,14 +408,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			const zipBlob = await zip.generateAsync({ type: "blob" });
 			const zipFileName = `Cartas_Vencimiento_${new Date().toISOString().slice(0, 10)}.zip`;
 
-			const url = URL.createObjectURL(zipBlob);
-			const link = document.createElement("a");
-			link.href = url;
-			link.download = zipFileName;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
+			downloadBlob(zipBlob, zipFileName);
 
 			const result: PDFGenerationResult = {
 				success: generatedLetters.length > 0,
@@ -418,6 +422,56 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		} catch (error) {
 			console.error("Error generating ZIP:", error);
 			alert("Error al generar el archivo ZIP");
+		} finally {
+			setIsGenerating(false);
+		}
+	};
+
+	const handleSendWhatsApp = async (letterId: string) => {
+		const letter = letters.find((l) => l.id === letterId);
+		if (!letter || !letter.client.phone) return;
+
+		try {
+			setIsGenerating(true);
+			// 1. Generate and download the PDF
+			const pdfBlob = await generateSinglePDF(letter);
+			const fileName = generateFileName(letter.client.name, letter.templateType);
+			downloadBlob(pdfBlob, fileName);
+
+			// 2. Prepare WhatsApp link
+			const cleanedPhone = cleanPhoneNumber(letter.client.phone);
+			const message = createWhatsAppMessage(letter);
+			const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanedPhone}&text=${message}`;
+
+			// 3. Open WhatsApp in a new tab
+			window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+
+			// 4. Trigger the onGenerated callback to update the main dashboard
+			const result: PDFGenerationResult = {
+				success: true,
+				letters: [
+					{
+						letterId: letter.id,
+						sourceRecordIds: letter.sourceRecordIds,
+						clientName: letter.client.name,
+						clientPhone: letter.client.phone,
+						clientEmail: letter.client.email,
+						templateType: letter.templateType,
+						fileName,
+						pdfBlob,
+						policyCount: letter.policies.length,
+						needsReview: letter.needsReview,
+						missingData: letter.missingData,
+					},
+				],
+				errors: [],
+				totalGenerated: 1,
+			};
+			setGenerationResult(result);
+			onGenerated?.(result);
+		} catch (error) {
+			console.error("Error preparing WhatsApp message:", error);
+			alert("Error al preparar el mensaje de WhatsApp.");
 		} finally {
 			setIsGenerating(false);
 		}
@@ -513,6 +567,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						onCancelEdit={() => setEditingLetter(null)}
 						onPreview={() => handlePreview(letter.id)}
 						onDownload={() => handleDownloadSingle(letter.id)}
+						onWhatsApp={() => handleSendWhatsApp(letter.id)}
 						onUpdateLetterData={updateLetterData}
 					/>
 				))}
@@ -547,10 +602,11 @@ interface LetterCardProps {
 	onCancelEdit: () => void;
 	onPreview: () => void;
 	onDownload: () => void;
+	onWhatsApp: () => void;
 	onUpdateLetterData: (letterId: string, updates: Partial<LetterData>) => void;
 }
 
-function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onSaveEdit, onCancelEdit, onPreview, onDownload, onUpdateLetterData }: LetterCardProps) {
+function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onSaveEdit, onCancelEdit, onPreview, onDownload, onWhatsApp, onUpdateLetterData }: LetterCardProps) {
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
 
 	useEffect(() => {
@@ -659,22 +715,25 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 						<div className="flex space-x-1">
 							{!isEditing ? (
 								<>
-									<Button size="sm" variant="outline" onClick={onEdit} disabled={isGenerating}>
+									<Button size="default" variant="outline" onClick={onEdit} disabled={isGenerating}>
 										<Edit3 className="h-4 w-4" />
 									</Button>
-									<Button size="sm" variant="outline" onClick={onPreview} disabled={isGenerating || isPreviewing}>
+									<Button size="default" variant="outline" onClick={onPreview} disabled={isGenerating || isPreviewing}>
 										{isPreviewing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
 									</Button>
-									<Button size="sm" onClick={onDownload} disabled={isGenerating} className="patria-btn-primary">
+									<Button size="default" onClick={onDownload} disabled={isGenerating} className="patria-btn-primary">
 										<Download className="h-4 w-4" />
+									</Button>
+									<Button size="default" onClick={onWhatsApp} disabled={isGenerating || !letter.client.phone} className="bg-green-500 hover:bg-green-600 text-white">
+										<WhatsAppIcon />
 									</Button>
 								</>
 							) : (
 								<>
-									<Button size="sm" onClick={handleSave} className="patria-btn-primary">
+									<Button size="default" onClick={handleSave} className="patria-btn-primary">
 										<Save className="h-4 w-4" />
 									</Button>
-									<Button size="sm" variant="outline" onClick={onCancelEdit}>
+									<Button size="default" variant="outline" onClick={onCancelEdit}>
 										<X className="h-4 w-4" />
 									</Button>
 								</>
