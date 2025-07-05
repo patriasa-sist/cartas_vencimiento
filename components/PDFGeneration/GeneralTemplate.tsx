@@ -123,11 +123,8 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 					<View style={[generalStyles.tableCol, { width: "15%" }]}>
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
-					<View style={[generalStyles.tableCol, { width: "15%" }]}>
+					<View style={[generalStyles.tableCol, { width: "30%" }]}>
 						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
-					</View>
-					<View style={[generalStyles.tableCol, { width: "15%" }]}>
-						<Text style={generalStyles.headerText}>PRIMA</Text>
 					</View>
 				</View>
 
@@ -148,11 +145,8 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={[generalStyles.tableCol, { width: "30%" }]}>
 							<Text style={generalStyles.cellText}>{policy.manualFields?.insuredValue ? formatUSD(policy.manualFields.insuredValue) : "No especificado"}</Text>
-						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							<Text style={generalStyles.cellText}>{policy.manualFields?.premium ? formatCurrency(policy.manualFields.premium) : "No especificado"}</Text>
 						</View>
 					</View>
 				))}

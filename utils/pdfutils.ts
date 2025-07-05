@@ -3,6 +3,10 @@
 import { ProcessedInsuranceRecord } from "@/types/insurance";
 import { LetterData, PolicyForLetter } from "@/types/pdf";
 
+// Constantes para los textos de plantilla
+const HEALTH_CONDITIONS_TEMPLATE = `Le informamos que a partir del *01/05/2025*, se excluye la cobertura del certificado asistencia al viajero y las pólizas se emiten en moneda nacional (BS)`;
+const GENERAL_CONDITIONS_TEMPLATE = `A partir del *01/12/2024* se aplica :\n-Deducible coaseguro: 10% del valor del siniestro mínimo Bs 1.000 aplicable para las coberturas de Daños Propios, Conmoción Civil, Huelgas, Daño Malicioso, Sabotaje, Vandalismo y Terrorismo.\n-Extraterritorialidad: PAGO DE EXTRA PRIMA DE BS 400 (CONTADO) SI ES SOLICITADO EN LA RENOVACION DE LA POLIZA, POSTERIOR A LA RENOVACION DE LA POLIZA, EXTRA PRIMA DE BS 500.-\n“ La suscripción de los seguros seguro es Bs y considerando que en los últimos meses se ha observado un incremento significativo en el valor de mercado de los bienes en general en nuestro país, solicitamos la revisión del valor asegurado de su vehículo. La finalidad de esta actualización es garantizar una protección correcta de su patrimonio y acorde al valor real actual de los bien asegurado, con el fin de evitar la aplicación de infraseguro en caso de siniestro, como se encuentra establecido en el Código de Comercio, Art.1056.”`;
+
 export const PDF_CONSTANTS = {
 	TEMPLATES: {
 		SALUD: "salud",
@@ -25,6 +29,7 @@ export const PDF_CONSTANTS = {
 	FONTS: {
 		primary: "Helvetica",
 		bold: "Helvetica-Bold",
+		italic: "Helvetica-Oblique",
 		size: {
 			title: 14,
 			header: 12,
@@ -48,12 +53,10 @@ export function determineTemplateType(ramo: string): "salud" | "general" {
 
 /**
  * Agrupa registros por cliente y tipo de template.
- * MEJORADO: Ahora agrupa correctamente las pólizas de salud con múltiples asegurados.
  */
 export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): LetterData[] {
 	const groups: Record<string, ProcessedInsuranceRecord[]> = {};
 
-	// Agrupar por cliente + tipo de template
 	records.forEach((record) => {
 		const templateType = determineTemplateType(record.ramo);
 		const key = `${record.asegurado.trim()}_${templateType}`;
@@ -63,15 +66,13 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 		groups[key].push(record);
 	});
 
-	// Convertir grupos a LetterData
 	return Object.entries(groups).map(([key, groupRecords], index) => {
 		const firstRecord = groupRecords[0];
 		const templateType = determineTemplateType(firstRecord.ramo);
 		let policies: PolicyForLetter[] = [];
-		const sourceRecordIds = groupRecords.map((r) => r.id!).filter((id) => id); // Obtenemos los IDs
+		const sourceRecordIds = groupRecords.map((r) => r.id!).filter((id) => id);
 
 		if (templateType === "salud") {
-			// Sub-agrupación para pólizas de SALUD por número de póliza
 			const healthPolicyGroups: Record<string, ProcessedInsuranceRecord[]> = {};
 			groupRecords.forEach((record) => {
 				const policyKey = record.noPoliza;
@@ -83,10 +84,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 
 			policies = Object.values(healthPolicyGroups).map((policyGroup) => {
 				const mainRecord = policyGroup.find((r) => !r.materiaAsegurada || r.materiaAsegurada.trim().toUpperCase() === r.asegurado.trim().toUpperCase()) || policyGroup[0];
-
 				const insuredMembers = [...new Set(policyGroup.map((r) => r.materiaAsegurada?.trim()).filter((name): name is string => !!name && name.toUpperCase() !== "TITULAR"))];
-
-				// Asegurarse que el titular esté en la lista y sea el primero
 				const titular = mainRecord.asegurado.trim();
 				const titularIndex = insuredMembers.findIndex((m) => m.toUpperCase() === titular.toUpperCase());
 				if (titularIndex > -1) {
@@ -101,7 +99,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 					branch: mainRecord.ramo,
 					insuredValue: mainRecord.valorAsegurado,
 					premium: mainRecord.prima,
-					insuredMembers, // Lista de todos los asegurados para esta póliza
+					insuredMembers,
 					manualFields: {
 						premium: mainRecord.prima,
 						originalPremium: mainRecord.prima,
@@ -109,15 +107,14 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 						originalInsuredValue: mainRecord.valorAsegurado,
 						insuredMatter: mainRecord.materiaAsegurada,
 						originalInsuredMatter: mainRecord.materiaAsegurada,
-						insuredMembers: [...insuredMembers], // Editable list
-						originalInsuredMembers: [...insuredMembers], // Original list for comparison
+						insuredMembers: [...insuredMembers],
+						originalInsuredMembers: [...insuredMembers],
 						deductiblesCurrency: "Bs.",
 						territorialityCurrency: "Bs.",
 					},
 				};
 			});
 		} else {
-			// Lógica original para pólizas GENERALES
 			policies = groupRecords.map((record) => ({
 				expiryDate: formatDate(new Date(record.finDeVigencia)),
 				policyNumber: record.noPoliza,
@@ -152,6 +149,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			},
 			policies,
 			executive: firstRecord.ejecutivo,
+			additionalConditions: templateType === "salud" ? HEALTH_CONDITIONS_TEMPLATE : GENERAL_CONDITIONS_TEMPLATE,
 		};
 
 		const missingData = detectMissingData(letterDataBase);
@@ -182,7 +180,6 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 				missing.push(`${policyLabel}: Prima de renovación anual`);
 			}
 		} else {
-			// Para pólizas generales
 			if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
 				missing.push(`${policyLabel}: Valor Asegurado`);
 			}
@@ -213,7 +210,6 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 export function generateReferenceNumber(): string {
 	const now = new Date();
 	const year = now.getFullYear();
-	// Retorna un placeholder para ser llenado manualmente
 	return `SCPSA-____/${year}`;
 }
 

@@ -4,7 +4,7 @@ import { ProcessedInsuranceRecord } from "./insurance";
 
 export interface LetterData {
 	id: string;
-	sourceRecordIds: string[]; // NUEVO: IDs de los registros originales
+	sourceRecordIds: string[];
 	templateType: "salud" | "general";
 	referenceNumber: string;
 	date: string;
@@ -18,6 +18,7 @@ export interface LetterData {
 	executive: string;
 	needsReview: boolean;
 	missingData: string[];
+	additionalConditions?: string; // NUEVO: Campo para el texto editable
 }
 
 export interface PolicyForLetter {
@@ -27,12 +28,12 @@ export interface PolicyForLetter {
 	branch: string;
 	insuredValue?: number;
 	premium?: number;
-	insuredMembers?: string[]; // Para listar asegurados en pólizas de salud
+	insuredMembers?: string[];
 	manualFields?: {
 		insuredMatter?: string;
 		originalInsuredMatter?: string;
-		insuredMembers?: string[]; // Editable list of members for health policies
-		originalInsuredMembers?: string[]; // Original list for comparison
+		insuredMembers?: string[];
+		originalInsuredMembers?: string[];
 		specificConditions?: string;
 		deductibles?: number;
 		deductiblesCurrency?: "Bs." | "$us.";
@@ -58,8 +59,8 @@ export interface GeneratedLetter {
 	letterId: string;
 	sourceRecordIds: string[];
 	clientName: string;
-	clientPhone?: string; // Dato de cliente actualizado
-	clientEmail?: string; // Dato de cliente actualizado
+	clientPhone?: string;
+	clientEmail?: string;
 	templateType: "salud" | "general";
 	fileName: string;
 	pdfBlob?: Blob;

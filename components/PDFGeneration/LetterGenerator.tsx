@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone, PlusCircle } from "lucide-react";
+import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone, PlusCircle, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -143,15 +143,16 @@ function NumericInputWithCurrency({ value, currency, onValueChange, onCurrencyCh
 	);
 }
 
-// Componente para textarea de condiciones específicas
+// Componente para textarea
 interface ConditionsTextareaProps {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
 	label?: string;
+	rows?: number;
 }
 
-function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsTextareaProps) {
+function ConditionsTextarea({ value, onChange, placeholder, label, rows = 3 }: ConditionsTextareaProps) {
 	return (
 		<div>
 			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
@@ -159,14 +160,14 @@ function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsT
 				value={value || ""}
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
-				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-none h-16 focus:ring-2 focus:ring-patria-blue focus:border-transparent"
-				rows={3}
+				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-y focus:ring-2 focus:ring-patria-blue focus:border-transparent"
+				rows={rows}
 			/>
 		</div>
 	);
 }
 
-// NUEVO: Componente para editar la lista de asegurados
+// Componente para editar la lista de asegurados
 interface InsuredMembersEditorProps {
 	members: string[];
 	onChange: (newMembers: string[]) => void;
@@ -416,20 +417,16 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 		try {
 			setIsGenerating(true);
-			// 1. Generate and download the PDF
 			const pdfBlob = await generateSinglePDF(letter);
 			const fileName = generateFileName(letter.client.name, letter.templateType);
 			downloadBlob(pdfBlob, fileName);
 
-			// 2. Prepare WhatsApp link
 			const cleanedPhone = cleanPhoneNumber(letter.client.phone);
 			const message = createWhatsAppMessage(letter);
 			const whatsappUrl = `https://web.whatsapp.com/send?phone=${cleanedPhone}&text=${message}`;
 
-			// 3. Open WhatsApp in a new tab
 			window.open(whatsappUrl, "_blank", "noopener,noreferrer");
 
-			// 4. Trigger the onGenerated callback to update the main dashboard
 			const result: PDFGenerationResult = {
 				success: true,
 				letters: [
@@ -462,7 +459,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900 flex items-center">
@@ -486,7 +482,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</div>
 			</div>
 
-			{/* Estadísticas */}
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 				<Card>
 					<CardContent className="p-4 text-center">
@@ -517,7 +512,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</Card>
 			</div>
 
-			{/* Validation errors */}
 			{preparedLetters.validationErrors.length > 0 && (
 				<Alert className="border-yellow-200 bg-yellow-50">
 					<AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -533,7 +527,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</Alert>
 			)}
 
-			{/* List of letters */}
 			<div className="space-y-4">
 				{letters.map((letter) => (
 					<LetterCard
@@ -555,7 +548,6 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				))}
 			</div>
 
-			{/* Generation result */}
 			{generationResult && (
 				<Card className={generationResult.errors.length > 0 ? "border-yellow-200 bg-yellow-50" : "border-green-200 bg-green-50"}>
 					<CardContent className="p-4">
@@ -615,7 +607,6 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 					...policy.manualFields,
 					[field]: value,
 				};
-				// Also update the top-level property for real-time display in non-edit mode
 				if (field === "insuredMembers") {
 					return { ...policy, insuredMembers: value, manualFields: updatedManualFields };
 				}
@@ -737,6 +728,18 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 					)}
 				</div>
 
+				{isEditing && (
+					<div className="mb-4 p-3 bg-white rounded border">
+						<ConditionsTextarea
+							label="Condiciones Adicionales (editable):"
+							value={editedLetter.additionalConditions || ""}
+							onChange={(v) => handleFieldChange("additionalConditions", v)}
+							placeholder="Añade condiciones o notas aquí..."
+							rows={6}
+						/>
+					</div>
+				)}
+
 				<div className="space-y-3">
 					<h4 className="font-medium text-gray-900">Pólizas ({letter.policies.length})</h4>
 					{editedLetter.policies.map((policy, index) => (
@@ -795,6 +798,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														value={policy.manualFields?.insuredMatter || ""}
 														onChange={(v) => updatePolicy(index, "insuredMatter", v)}
 														placeholder="Describa la materia..."
+														rows={2}
 													/>
 													<NumericInputWithCurrency
 														label="Deducibles:"
@@ -819,6 +823,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														value={policy.manualFields?.specificConditions || ""}
 														onChange={(v) => updatePolicy(index, "specificConditions", v)}
 														placeholder="Condiciones adicionales..."
+														rows={2}
 													/>
 												</>
 											)}

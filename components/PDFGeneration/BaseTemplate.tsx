@@ -10,6 +10,7 @@ Font.register({
 	fonts: [
 		{ src: "https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica.ttf" },
 		{ src: "https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica-Bold.ttf", fontWeight: "bold" },
+		{ src: "https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica-Oblique.ttf", fontStyle: "italic" },
 	],
 });
 
@@ -17,16 +18,14 @@ const styles = StyleSheet.create({
 	page: {
 		flexDirection: "column",
 		backgroundColor: "#ffffff",
-		// Reducir el padding general de la página para ganar espacio
-		padding: 30, // Antes 40
+		padding: 30,
 		fontFamily: "Helvetica",
 		fontSize: 10,
 		lineHeight: 1.4,
 	},
 	header: {
 		flexDirection: "column",
-		// alignItems: "center",
-		marginBottom: 10, // Antes 20
+		marginBottom: 10,
 	},
 	logo: {
 		width: 150,
@@ -43,7 +42,7 @@ const styles = StyleSheet.create({
 		textAlign: "left",
 	},
 	clientInfo: {
-		marginBottom: 10, // Antes 20
+		marginBottom: 10,
 	},
 	clientName: {
 		fontSize: 10,
@@ -58,16 +57,16 @@ const styles = StyleSheet.create({
 	subject: {
 		fontSize: 11,
 		fontWeight: "bold",
-		marginBottom: 15, // Antes 15
+		marginBottom: 15,
 		textAlign: "left",
 		textDecoration: "underline",
 	},
 	greeting: {
-		marginBottom: 15, // Antes 15
+		marginBottom: 15,
 		fontSize: 10,
 	},
 	content: {
-		marginBottom: 5, // Antes 20
+		marginBottom: 5,
 	},
 	paragraph: {
 		marginBottom: 10,
@@ -79,7 +78,7 @@ const styles = StyleSheet.create({
 	signatureBlock: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		marginTop: 10, // Antes 40
+		marginTop: 10,
 		paddingHorizontal: 20,
 	},
 	signatureColumn: {
@@ -110,32 +109,33 @@ const styles = StyleSheet.create({
 		fontSize: 9,
 		textAlign: "center",
 	},
-	warningBox: {
-		backgroundColor: "#fef3cd",
-		borderWidth: 1,
-		borderColor: "#ffc107",
-		padding: 10,
-		marginBottom: 15,
-		borderRadius: 4,
-	},
-	warningText: {
-		color: "#856404",
-		fontSize: 8,
-		fontWeight: "bold",
-		textAlign: "center",
-	},
-	footer: {
-		fontSize: 6,
-		borderTopWidth: 1,
-		borderTopColor: "#e5e7eb",
-		paddingTop: 5,
-		marginBottom: 0,
-	},
-	footerText: {
-		fontSize: 6,
-		marginBottom: 0,
+	additionalConditions: {
+		marginTop: 10,
+		marginBottom: 10,
+		fontSize: 9,
+		textAlign: "justify",
 	},
 });
+
+// Componente para parsear y renderizar texto con formato
+const FormattedText: React.FC<{ text: string; isItalic?: boolean }> = ({ text, isItalic = false }) => {
+	const parts = text.split(/(\*.*?\*)/g).filter(Boolean);
+
+	return (
+		<Text style={{ fontStyle: isItalic ? "italic" : "normal" }}>
+			{parts.map((part, index) => {
+				if (part.startsWith("*") && part.endsWith("*")) {
+					return (
+						<Text key={index} style={{ fontWeight: "bold" }}>
+							{part.slice(1, -1)}
+						</Text>
+					);
+				}
+				return <Text key={index}>{part}</Text>;
+			})}
+		</Text>
+	);
+};
 
 interface BaseTemplateProps {
 	letterData: LetterData;
@@ -146,14 +146,12 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 	return (
 		<Document>
 			<Page size="LETTER" style={styles.page}>
-				{/* Header con Logo */}
 				<View style={styles.header}>
 					<Image style={styles.logo} src={PDF_ASSETS.PATRIA_LOGO} />
 					<Text style={styles.headerText}>Santa Cruz, {letterData.date}</Text>
 					<Text style={styles.referenceNumber}>{letterData.referenceNumber}</Text>
 				</View>
 
-				{/* Información del Cliente */}
 				<View style={styles.clientInfo}>
 					<Text style={styles.clientName}>
 						{letterData.client.name.includes("SRL") || letterData.client.name.includes("S.A.") ? "Señores" : letterData.client.name.includes("BETTY") ? "Señora" : "Señor"}
@@ -168,34 +166,29 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 					<Text style={styles.present}>Presente.</Text>
 				</View>
 
-				{/* Asunto */}
 				<View>
-					<Text style={styles.subject}>
-						Ref.: AVISO DE VENCIMIENTO
-						{letterData.templateType === "salud" ? " POLIZA DE SEGURO SALUD" : " POLIZA DE SEGURO"}
-					</Text>
+					<Text style={styles.subject}>Ref.: AVISO DE VENCIMIENTO {letterData.templateType === "salud" ? "POLIZA DE SEGURO SALUD" : "POLIZA DE SEGURO"}</Text>
 				</View>
 
-				{/* Saludo */}
 				<View>
 					<Text style={styles.greeting}>De nuestra consideración:</Text>
 				</View>
 
-				{/* Contenido */}
 				<View style={styles.content}>
 					<Text style={styles.paragraph}>
-						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la
-						{letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de Seguro cuyos detalles se especifican a continuación:
+						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la {letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de
+						Seguro cuyos detalles se especifican a continuación:
 					</Text>
 
-					{/* Contenido dinámico basado en la plantilla */}
 					{children}
 
-					<Text style={styles.paragraph}>
-						{letterData.templateType === "salud"
-							? "Tenga a bien hacernos conocer cualquier cambio que desea realizar o en su defecto su consentimiento para la renovación."
-							: "Requerimos revisar los datos y el valor asegurado, esto para proceder si corresponde, con la actualización o modificación de esto(s). Tenga a bien hacernos a conocer cualquier cambio que se haya producido o en su defecto su consentimiento para la renovación."}
-					</Text>
+					<Text style={styles.paragraph}>Tenga a bien hacernos conocer cualquier cambio que desea realizar o en su defecto su consentimiento para la renovación.</Text>
+
+					{letterData.additionalConditions && (
+						<View style={styles.additionalConditions}>
+							<FormattedText text={letterData.additionalConditions} isItalic={letterData.templateType === "salud"} />
+						</View>
+					)}
 
 					{letterData.templateType === "salud" && (
 						<Text style={styles.paragraph}>
@@ -205,35 +198,29 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 					)}
 
 					<Text style={styles.paragraph}>
-						Es importante informarle que
-						{letterData.templateType !== "salud" ? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas," : " la"} NO RENOVACION, suspende toda cobertura de la
-						póliza de seguro.
+						Es importante informarle que {letterData.templateType !== "salud" ? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas," : " la"} NO RENOVACION,
+						suspende toda cobertura de la póliza de seguro.
 					</Text>
 
 					<Text style={styles.paragraph}>De esta manera quedamos a la espera de su respuesta, nos despedimos con la cordialidad de siempre.</Text>
 				</View>
 
-				{/* Firma */}
 				<View style={styles.signature}>
 					<Text>Atentamente,</Text>
 				</View>
 
-				{/* Firma Corporativa */}
 				<View style={styles.companyName}>
 					<Text>PATRIA S.A.</Text>
 					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
 				</View>
 
-				{/* Bloque de firmas */}
 				<View style={styles.signatureBlock}>
 					<View style={styles.signatureColumn}>
 						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_CARMEN} />
-						<Text style={styles.signatureName}>Carmen R. Ferrufino Howard</Text>
 					</View>
 
 					<View style={styles.signatureColumn}>
 						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_MARIA} />
-						<Text style={styles.signatureName}>Maria Ercilia Vargas Becerra</Text>
 					</View>
 				</View>
 			</Page>
