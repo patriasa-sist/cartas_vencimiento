@@ -109,6 +109,8 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 						originalInsuredValue: mainRecord.valorAsegurado,
 						insuredMatter: mainRecord.materiaAsegurada,
 						originalInsuredMatter: mainRecord.materiaAsegurada,
+						insuredMembers: [...insuredMembers], // Editable list
+						originalInsuredMembers: [...insuredMembers], // Original list for comparison
 						deductiblesCurrency: "Bs.",
 						territorialityCurrency: "Bs.",
 					},

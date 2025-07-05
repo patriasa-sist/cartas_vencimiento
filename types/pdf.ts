@@ -31,6 +31,8 @@ export interface PolicyForLetter {
 	manualFields?: {
 		insuredMatter?: string;
 		originalInsuredMatter?: string;
+		insuredMembers?: string[]; // Editable list of members for health policies
+		originalInsuredMembers?: string[]; // Original list for comparison
 		specificConditions?: string;
 		deductibles?: number;
 		deductiblesCurrency?: "Bs." | "$us.";

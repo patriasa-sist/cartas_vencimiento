@@ -71,62 +71,65 @@ interface HealthTemplateProps {
 export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) => {
 	return (
 		<BaseTemplate letterData={letterData}>
-			{letterData.policies.map((policy, policyIndex) => (
-				<View key={policyIndex} style={{ marginBottom: 15 }}>
-					{/* Policy Table */}
-					<View style={healthStyles.policyTable}>
-						{/* Table Header */}
-						<View style={healthStyles.tableRow}>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.headerText}>FECHA DE VENCIMIENTO</Text>
+			{letterData.policies.map((policy, policyIndex) => {
+				const membersToRender = policy.manualFields?.insuredMembers || policy.insuredMembers || [];
+				return (
+					<View key={policyIndex} style={{ marginBottom: 15 }}>
+						{/* Policy Table */}
+						<View style={healthStyles.policyTable}>
+							{/* Table Header */}
+							<View style={healthStyles.tableRow}>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.headerText}>FECHA DE VENCIMIENTO</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "25%" }]}>
+									<Text style={healthStyles.headerText}>No. DE PÓLIZA</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.headerText}>COMPAÑÍA</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "15%" }]}>
+									<Text style={healthStyles.headerText}>RAMO</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.headerText}>PRIMA DE RENOVACIÓN MENSUAL</Text>
+								</View>
 							</View>
-							<View style={[healthStyles.tableCol, { width: "25%" }]}>
-								<Text style={healthStyles.headerText}>No. DE PÓLIZA</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.headerText}>COMPAÑÍA</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "15%" }]}>
-								<Text style={healthStyles.headerText}>RAMO</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.headerText}>PRIMA DE RENOVACIÓN MENSUAL</Text>
+
+							{/* Policy Row */}
+							<View style={healthStyles.tableRow}>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.cellText}>{policy.expiryDate}</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "25%" }]}>
+									<Text style={healthStyles.policyNumberCellText}>{policy.policyNumber}</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.cellText}>{policy.company}</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "15%" }]}>
+									<Text style={healthStyles.cellText}>{policy.branch}</Text>
+								</View>
+								<View style={[healthStyles.tableCol, { width: "20%" }]}>
+									<Text style={healthStyles.cellText}>{policy.manualFields?.renewalPremium ? formatUSD(policy.manualFields.renewalPremium) : "A confirmar"}</Text>
+								</View>
 							</View>
 						</View>
 
-						{/* Policy Row */}
-						<View style={healthStyles.tableRow}>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.cellText}>{policy.expiryDate}</Text>
+						{/* Insured Members List */}
+						{membersToRender.length > 0 && (
+							<View style={healthStyles.aseguradosSection}>
+								<Text style={healthStyles.aseguradosTitle}>Asegurados:</Text>
+								{membersToRender.map((member, memberIndex) => (
+									<Text key={memberIndex} style={healthStyles.aseguradoName}>
+										• {member.toUpperCase()}
+									</Text>
+								))}
 							</View>
-							<View style={[healthStyles.tableCol, { width: "25%" }]}>
-								<Text style={healthStyles.policyNumberCellText}>{policy.policyNumber}</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.cellText}>{policy.company}</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "15%" }]}>
-								<Text style={healthStyles.cellText}>{policy.branch}</Text>
-							</View>
-							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.cellText}>{policy.manualFields?.renewalPremium ? formatUSD(policy.manualFields.renewalPremium) : "A confirmar"}</Text>
-							</View>
-						</View>
+						)}
 					</View>
-
-					{/* Insured Members List */}
-					{policy.insuredMembers && policy.insuredMembers.length > 0 && (
-						<View style={healthStyles.aseguradosSection}>
-							<Text style={healthStyles.aseguradosTitle}>Asegurados:</Text>
-							{policy.insuredMembers.map((member, memberIndex) => (
-								<Text key={memberIndex} style={healthStyles.aseguradoName}>
-									• {member.toUpperCase()}
-								</Text>
-							))}
-						</View>
-					)}
-				</View>
-			))}
+				);
+			})}
 		</BaseTemplate>
 	);
 };

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone } from "lucide-react";
+import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,6 +162,50 @@ function ConditionsTextarea({ value, onChange, placeholder, label }: ConditionsT
 				className="w-full p-2 text-xs border border-gray-300 rounded-md resize-none h-16 focus:ring-2 focus:ring-patria-blue focus:border-transparent"
 				rows={3}
 			/>
+		</div>
+	);
+}
+
+// NUEVO: Componente para editar la lista de asegurados
+interface InsuredMembersEditorProps {
+	members: string[];
+	onChange: (newMembers: string[]) => void;
+	label?: string;
+}
+
+function InsuredMembersEditor({ members, onChange, label }: InsuredMembersEditorProps) {
+	const handleMemberChange = (index: number, value: string) => {
+		const newMembers = [...members];
+		newMembers[index] = value;
+		onChange(newMembers);
+	};
+
+	const addMember = () => {
+		onChange([...members, ""]);
+	};
+
+	const removeMember = (index: number) => {
+		const newMembers = members.filter((_, i) => i !== index);
+		onChange(newMembers);
+	};
+
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
+			<div className="space-y-2">
+				{members.map((member, index) => (
+					<div key={index} className="flex items-center space-x-2">
+						<Input type="text" value={member} onChange={(e) => handleMemberChange(index, e.target.value)} className="text-xs h-8 flex-grow" placeholder={`Asegurado ${index + 1}`} />
+						<Button type="button" size="sm" variant="destructive" onClick={() => removeMember(index)} className="h-8 w-8 p-0 shrink-0">
+							<X className="h-4 w-4" />
+						</Button>
+					</div>
+				))}
+				<Button type="button" size="sm" variant="outline" onClick={addMember} className="text-xs h-8">
+					<PlusCircle className="h-4 w-4 mr-2" />
+					Añadir Asegurado
+				</Button>
+			</div>
 		</div>
 	);
 }
@@ -571,6 +615,10 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 					...policy.manualFields,
 					[field]: value,
 				};
+				// Also update the top-level property for real-time display in non-edit mode
+				if (field === "insuredMembers") {
+					return { ...policy, insuredMembers: value, manualFields: updatedManualFields };
+				}
 				return { ...policy, manualFields: updatedManualFields };
 			}
 			return policy;
@@ -725,13 +773,20 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 												className="text-xs h-8"
 											/>
 											{letter.templateType === "salud" && (
-												<NumericInput
-													label="Prima renovación (USD):"
-													value={policy.manualFields?.renewalPremium || 0}
-													onChange={(v) => updatePolicy(index, "renewalPremium", v)}
-													placeholder="0.00"
-													className="text-xs h-8"
-												/>
+												<>
+													<NumericInput
+														label="Prima renovación (USD):"
+														value={policy.manualFields?.renewalPremium || 0}
+														onChange={(v) => updatePolicy(index, "renewalPremium", v)}
+														placeholder="0.00"
+														className="text-xs h-8"
+													/>
+													<InsuredMembersEditor
+														label="Asegurados (editable):"
+														members={policy.manualFields?.insuredMembers || []}
+														onChange={(newMembers) => updatePolicy(index, "insuredMembers", newMembers)}
+													/>
+												</>
 											)}
 											{letter.templateType === "general" && (
 												<>
@@ -769,12 +824,24 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 											)}
 										</>
 									)}
-									{!isEditing && policy.manualFields && (
+									{!isEditing && (
 										<div className="text-xs space-y-1">
-											{policy.manualFields.insuredValue !== undefined && <div className="text-green-700 font-medium">✓ Valor Asegurado: {formatUSD(policy.manualFields.insuredValue)}</div>}
-											{policy.manualFields.premium !== undefined && <div className="text-green-700 font-medium">✓ Prima: {formatCurrency(policy.manualFields.premium)}</div>}
-											{letter.templateType === "salud" && policy.manualFields.renewalPremium !== undefined && (
-												<div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>
+											{policy.manualFields?.insuredValue !== undefined && <div className="text-green-700 font-medium">✓ Valor Asegurado: {formatUSD(policy.manualFields.insuredValue)}</div>}
+											{policy.manualFields?.premium !== undefined && <div className="text-green-700 font-medium">✓ Prima: {formatCurrency(policy.manualFields.premium)}</div>}
+											{letter.templateType === "salud" && (
+												<>
+													{policy.manualFields.renewalPremium !== undefined && <div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>}
+													{policy.insuredMembers && policy.insuredMembers.length > 0 && (
+														<div>
+															<div className="text-green-700 font-medium">✓ Asegurados:</div>
+															<ul className="list-disc list-inside pl-2">
+																{policy.insuredMembers.map((member, i) => (
+																	<li key={i}>{member}</li>
+																))}
+															</ul>
+														</div>
+													)}
+												</>
 											)}
 											{letter.templateType === "general" && (
 												<>
