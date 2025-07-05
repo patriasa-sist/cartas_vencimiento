@@ -210,7 +210,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 						póliza de seguro.
 					</Text>
 
-					<Text style={styles.paragraph}>De esta manera quedamos a la espera de su respuesta y nos despedimos con la cordialidad de siempre.</Text>
+					<Text style={styles.paragraph}>De esta manera quedamos a la espera de su respuesta, nos despedimos con la cordialidad de siempre.</Text>
 				</View>
 
 				{/* Firma */}
@@ -224,29 +224,16 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 					<Text style={styles.companySubtitle}>Corredores y Asesores en Seguros</Text>
 				</View>
 
-				{/* Footer */}
-				<View style={styles.footer}>
-					<Text style={styles.footerText}>CC/*crfh</Text>
-					<Text style={styles.footerText}>CC.: File</Text>
-					<Text style={styles.footerText}>Adj.: Lo citado</Text>
-				</View>
-
 				{/* Bloque de firmas */}
 				<View style={styles.signatureBlock}>
 					<View style={styles.signatureColumn}>
 						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_CARMEN} />
-						<Text style={styles.signatureName}>Carmen R. Howard Howard</Text>
-						<Text style={styles.signatureTitle}>Ejecutivo de Cuentas Especiales</Text>
-						<Text style={styles.signatureTitle}>PATRIA S.A.</Text>
-						<Text style={styles.signatureTitle}>Corredores y Asesores en Seguros</Text>
+						<Text style={styles.signatureName}>Carmen R. Ferrufino Howard</Text>
 					</View>
 
 					<View style={styles.signatureColumn}>
 						<Image style={styles.signatureImage} src={PDF_ASSETS.SIGNATURE_MARIA} />
-						<Text style={styles.signatureName}>Maria Emilia Vargas Becerra</Text>
-						<Text style={styles.signatureTitle}>Jefe de Producción</Text>
-						<Text style={styles.signatureTitle}>PATRIA S.A.</Text>
-						<Text style={styles.signatureTitle}>Corredores y Asesores en Seguros</Text>
+						<Text style={styles.signatureName}>Maria Ercilia Vargas Becerra</Text>
 					</View>
 				</View>
 			</Page>

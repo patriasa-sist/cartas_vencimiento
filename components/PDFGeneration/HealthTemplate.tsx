@@ -90,7 +90,7 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 								<Text style={healthStyles.headerText}>RAMO</Text>
 							</View>
 							<View style={[healthStyles.tableCol, { width: "20%" }]}>
-								<Text style={healthStyles.headerText}>PRIMA DE RENOVACIÓN ANUAL</Text>
+								<Text style={healthStyles.headerText}>PRIMA DE RENOVACIÓN MENSUAL</Text>
 							</View>
 						</View>
 

@@ -174,7 +174,9 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 								<Text style={generalStyles.conditionText}>• Deducible coaseguro: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</Text>
 							)}
 							{policy.manualFields?.territoriality !== undefined && policy.manualFields?.territoriality !== null && (
-								<Text style={generalStyles.conditionText}>• Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}</Text>
+								<Text style={generalStyles.conditionText}>
+									• Extraterritorialidad (opcional): {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
+								</Text>
 							)}
 							{policy.manualFields?.specificConditions && (
 								<Text style={generalStyles.conditionText}>
@@ -183,18 +185,6 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 								</Text>
 							)}
 						</View>
-					))}
-				</View>
-			)}
-
-			{/* Missing Data Summary (This section will likely be empty if all manual fields are filled) */}
-			{letterData.missingData.length > 0 && (
-				<View style={generalStyles.missingDataBox}>
-					<Text style={generalStyles.missingDataText}>DATOS FALTANTES PARA COMPLETAR MANUALMENTE:</Text>
-					{letterData.missingData.map((item, index) => (
-						<Text key={index} style={generalStyles.missingDataText}>
-							• {item}
-						</Text>
 					))}
 				</View>
 			)}
