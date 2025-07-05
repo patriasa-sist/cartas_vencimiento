@@ -31,7 +31,7 @@ export function cleanPhoneNumber(phone: string): string {
  * @returns El mensaje de saludo codificado para URL.
  */
 export function createWhatsAppMessage(letterData: LetterData): string {
-	const clientName = letterData.client.name.split(" ")[0]; // Usar solo el primer nombre
+	const clientName = letterData.client.name;
 	const executiveName = letterData.executive;
 
 	const message = `Estimado(a) ${clientName},
