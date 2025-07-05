@@ -12,8 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProcessedInsuranceRecord } from "@/types/insurance";
 import { LetterData, GeneratedLetter, PDFGenerationResult, PolicyForLetter } from "@/types/pdf";
-import { groupRecordsForLetters, validateRecordForPDF, generateFileName, formatUSD, formatCurrency, determineTemplateType } from "@/utils/pdfutils";
-import { cleanPhoneNumber, createWhatsAppMessage } from "@/utils/whatsapp"; // Importar utilidades de WhatsApp
+import { groupRecordsForLetters, validateRecordForPDF, generateFileName, formatUSD, formatCurrency, determineTemplateType, detectMissingData } from "@/utils/pdfutils";
+import { cleanPhoneNumber, createWhatsAppMessage } from "@/utils/whatsapp";
 import { pdf } from "@react-pdf/renderer";
 import { HealthTemplate } from "./HealthTemplate";
 import { GeneralTemplate } from "./GeneralTemplate";
@@ -221,81 +221,15 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			const updated = prev.map((letter) => {
 				if (letter.id === letterId) {
 					const updatedLetter = { ...letter, ...updates };
-					updatedLetter.needsReview = calculateNeedsReview(updatedLetter);
-					updatedLetter.missingData = calculateMissingData(updatedLetter);
+					const missingData = detectMissingData(updatedLetter);
+					updatedLetter.missingData = missingData;
+					updatedLetter.needsReview = missingData.length > 0 || updatedLetter.templateType === "general";
 					return updatedLetter;
 				}
 				return letter;
 			});
 			return updated;
 		});
-	};
-
-	const calculateNeedsReview = (letter: LetterData): boolean => {
-		return (
-			letter.policies.some((policy) => {
-				if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
-					return true;
-				}
-				if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
-					return true;
-				}
-
-				if (letter.templateType === "salud") {
-					return !policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0;
-				}
-				if (letter.templateType === "general") {
-					return (
-						!policy.manualFields?.insuredMatter ||
-						!policy.manualFields?.specificConditions ||
-						!policy.manualFields?.deductibles ||
-						policy.manualFields.deductibles <= 0 ||
-						!policy.manualFields?.territoriality ||
-						policy.manualFields.territoriality <= 0
-					);
-				}
-				return false;
-			}) || letter.missingData.length > 0
-		);
-	};
-
-	const calculateMissingData = (letter: LetterData): string[] => {
-		const missing: string[] = [];
-
-		letter.policies.forEach((policy, index) => {
-			const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
-
-			if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
-				missing.push(`${policyLabel}: Valor Asegurado`);
-			}
-
-			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
-				missing.push(`${policyLabel}: Prima`);
-			}
-
-			if (letter.templateType === "salud") {
-				if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
-					missing.push(`${policyLabel}: Prima de renovación anual`);
-				}
-			}
-
-			if (letter.templateType === "general") {
-				if (!policy.manualFields?.insuredMatter) {
-					missing.push(`${policyLabel}: Materia Asegurada`);
-				}
-				if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
-					missing.push(`${policyLabel}: Información de deducibles`);
-				}
-				if (!policy.manualFields?.territoriality || policy.manualFields.territoriality <= 0) {
-					missing.push(`${policyLabel}: Información de extraterritorialidad`);
-				}
-				if (!policy.manualFields?.specificConditions) {
-					missing.push(`${policyLabel}: Condiciones específicas`);
-				}
-			}
-		});
-
-		return missing;
 	};
 
 	const generateSinglePDF = async (letterData: LetterData): Promise<Blob> => {
@@ -379,6 +313,10 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 			const errors: string[] = [];
 
 			for (const letter of letters) {
+				if (letter.referenceNumber.includes("____")) {
+					errors.push(`Error: Número de referencia no válido para ${letter.client.name}.`);
+					continue;
+				}
 				try {
 					const pdfBlob = await generateSinglePDF(letter);
 					const fileName = generateFileName(letter.client.name, letter.templateType);
@@ -405,10 +343,11 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				}
 			}
 
-			const zipBlob = await zip.generateAsync({ type: "blob" });
-			const zipFileName = `Cartas_Vencimiento_${new Date().toISOString().slice(0, 10)}.zip`;
-
-			downloadBlob(zipBlob, zipFileName);
+			if (generatedLetters.length > 0) {
+				const zipBlob = await zip.generateAsync({ type: "blob" });
+				const zipFileName = `Cartas_Vencimiento_${new Date().toISOString().slice(0, 10)}.zip`;
+				downloadBlob(zipBlob, zipFileName);
+			}
 
 			const result: PDFGenerationResult = {
 				success: generatedLetters.length > 0,
@@ -560,8 +499,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						isPreviewing={previewLetter === letter.id}
 						isGenerating={isGenerating}
 						onEdit={() => setEditingLetter(letter.id)}
-						onSaveEdit={(updates) => {
-							updateLetterData(letter.id, updates);
+						onSaveEdit={() => {
 							setEditingLetter(null);
 						}}
 						onCancelEdit={() => setEditingLetter(null)}
@@ -575,13 +513,13 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 			{/* Generation result */}
 			{generationResult && (
-				<Card className="border-green-200 bg-green-50">
+				<Card className={generationResult.errors.length > 0 ? "border-yellow-200 bg-yellow-50" : "border-green-200 bg-green-50"}>
 					<CardContent className="p-4">
 						<div className="flex items-center">
-							<CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+							{generationResult.errors.length > 0 ? <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" /> : <CheckCircle className="h-5 w-5 text-green-600 mr-2" />}
 							<div>
-								<div className="font-medium text-green-800">✅ {generationResult.totalGenerated} cartas generadas exitosamente</div>
-								{generationResult.errors.length > 0 && <div className="text-sm text-red-600 mt-1">{generationResult.errors.length} errores encontrados</div>}
+								<div className={`font-medium ${generationResult.errors.length > 0 ? "text-yellow-800" : "text-green-800"}`}>✅ {generationResult.totalGenerated} cartas generadas.</div>
+								{generationResult.errors.length > 0 && <div className="text-sm text-red-600 mt-1">{generationResult.errors.length} errores encontrados.</div>}
 							</div>
 						</div>
 					</CardContent>
@@ -598,7 +536,7 @@ interface LetterCardProps {
 	isPreviewing: boolean;
 	isGenerating: boolean;
 	onEdit: () => void;
-	onSaveEdit: (updates: Partial<LetterData>) => void;
+	onSaveEdit: () => void;
 	onCancelEdit: () => void;
 	onPreview: () => void;
 	onDownload: () => void;
@@ -609,24 +547,21 @@ interface LetterCardProps {
 function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onSaveEdit, onCancelEdit, onPreview, onDownload, onWhatsApp, onUpdateLetterData }: LetterCardProps) {
 	const [editedLetter, setEditedLetter] = useState<LetterData>(letter);
 
+	const isReferenceValid = useMemo(() => letter.referenceNumber && !letter.referenceNumber.includes("____"), [letter.referenceNumber]);
+
 	useEffect(() => {
 		setEditedLetter(letter);
 	}, [letter]);
 
-	const handleSave = () => {
-		onSaveEdit(editedLetter);
+	const handleFieldChange = <K extends keyof LetterData>(field: K, value: LetterData[K]) => {
+		const updatedLetterData = { ...editedLetter, [field]: value };
+		setEditedLetter(updatedLetterData);
+		onUpdateLetterData(letter.id, { [field]: value });
 	};
 
 	const handleClientInfoChange = (field: "phone" | "email", value: string) => {
-		const updatedLetterData = {
-			...editedLetter,
-			client: {
-				...editedLetter.client,
-				[field]: value,
-			},
-		};
-		setEditedLetter(updatedLetterData);
-		onUpdateLetterData(letter.id, updatedLetterData);
+		const updatedClient = { ...editedLetter.client, [field]: value };
+		handleFieldChange("client", updatedClient);
 	};
 
 	const updatePolicy = (policyIndex: number, field: keyof NonNullable<PolicyForLetter["manualFields"]>, value: any) => {
@@ -636,60 +571,42 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 					...policy.manualFields,
 					[field]: value,
 				};
-				return {
-					...policy,
-					manualFields: updatedManualFields,
-				};
+				return { ...policy, manualFields: updatedManualFields };
 			}
 			return policy;
 		});
-
-		const updatedLetterData = {
-			...editedLetter,
-			policies: updatedPolicies,
-		};
-
-		setEditedLetter(updatedLetterData);
-		onUpdateLetterData(letter.id, updatedLetterData);
+		handleFieldChange("policies", updatedPolicies);
 	};
 
-	const getTemplateIcon = (type: "salud" | "general") => {
-		return type === "salud" ? "🏥" : "🚗";
-	};
-
-	const getTemplateColor = (type: "salud" | "general") => {
-		return type === "salud" ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50";
-	};
+	const getTemplateIcon = (type: "salud" | "general") => (type === "salud" ? "🏥" : "🚗");
+	const getTemplateColor = (type: "salud" | "general") => (type === "salud" ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50");
 
 	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
-		if (value === undefined || value === null || isNaN(value)) {
-			return "No especificado";
-		}
-		let formattedValue: string;
-		const numberFormatter = new Intl.NumberFormat("es-BO", {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		});
-		formattedValue = numberFormatter.format(value);
-		if (currency === "Bs.") {
-			return `Bs. ${formattedValue}`;
-		} else if (currency === "$us.") {
-			return `$us. ${formattedValue}`;
-		}
-		return value.toString();
+		if (value === undefined || value === null || isNaN(value)) return "No especificado";
+		const formattedValue = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+		return currency === "$us." ? `$us. ${formattedValue}` : `Bs. ${formattedValue}`;
 	};
 
 	return (
 		<Card className={`${getTemplateColor(letter.templateType)} ${letter.needsReview ? "border-l-4 border-l-red-500" : "border-l-4 border-l-green-500"}`}>
 			<CardHeader>
-				<div className="flex items-center justify-between">
-					<div className="flex items-center space-x-3">
-						<div className="text-2xl">{getTemplateIcon(letter.templateType)}</div>
-						<div>
-							<CardTitle className="text-lg">{letter.client.name}</CardTitle>
-							<CardDescription>
-								{letter.policies.length} póliza{letter.policies.length > 1 ? "s" : ""} • Template {letter.templateType} • Ref: {letter.referenceNumber}
-							</CardDescription>
+				<div className="flex items-start justify-between">
+					<div className="flex-1 space-y-2">
+						<div className="flex items-center space-x-3">
+							<div className="text-2xl">{getTemplateIcon(letter.templateType)}</div>
+							<div>
+								<CardTitle className="text-lg">{letter.client.name}</CardTitle>
+								{isEditing ? (
+									<div className="mt-1">
+										<label className="text-xs text-gray-600 block mb-1">Número de Referencia:</label>
+										<Input value={editedLetter.referenceNumber} onChange={(e) => handleFieldChange("referenceNumber", e.target.value)} className="text-sm h-8" placeholder="SCPSA-____/2025" />
+									</div>
+								) : (
+									<CardDescription>
+										{letter.policies.length} póliza{letter.policies.length > 1 ? "s" : ""} • Ref: {letter.referenceNumber}
+									</CardDescription>
+								)}
+							</div>
 						</div>
 					</div>
 
@@ -700,40 +617,37 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 								Revisar
 							</Badge>
 						)}
-
 						{!letter.needsReview && (
 							<Badge variant="default" className="text-xs bg-green-600">
 								<CheckCircle className="h-3 w-3 mr-1" />
 								Completo
 							</Badge>
 						)}
-
 						<Badge variant={letter.templateType === "salud" ? "default" : "secondary"} className="text-xs">
 							{letter.templateType.toUpperCase()}
 						</Badge>
-
 						<div className="flex space-x-1">
 							{!isEditing ? (
 								<>
-									<Button size="default" variant="outline" onClick={onEdit} disabled={isGenerating}>
+									<Button size="sm" variant="outline" onClick={onEdit} disabled={isGenerating}>
 										<Edit3 className="h-4 w-4" />
 									</Button>
-									<Button size="default" variant="outline" onClick={onPreview} disabled={isGenerating || isPreviewing}>
+									<Button size="sm" variant="outline" onClick={onPreview} disabled={isGenerating || isPreviewing || !isReferenceValid}>
 										{isPreviewing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
 									</Button>
-									<Button size="default" onClick={onDownload} disabled={isGenerating} className="patria-btn-primary">
+									<Button size="sm" onClick={onDownload} disabled={isGenerating || !isReferenceValid} className="patria-btn-primary">
 										<Download className="h-4 w-4" />
 									</Button>
-									<Button size="default" onClick={onWhatsApp} disabled={isGenerating || !letter.client.phone} className="bg-green-500 hover:bg-green-600 text-white">
+									<Button size="sm" onClick={onWhatsApp} disabled={isGenerating || !letter.client.phone || !isReferenceValid} className="bg-green-500 hover:bg-green-600 text-white">
 										<WhatsAppIcon />
 									</Button>
 								</>
 							) : (
 								<>
-									<Button size="default" onClick={handleSave} className="patria-btn-primary">
+									<Button size="sm" onClick={onSaveEdit} className="patria-btn-primary">
 										<Save className="h-4 w-4" />
 									</Button>
-									<Button size="default" variant="outline" onClick={onCancelEdit}>
+									<Button size="sm" variant="outline" onClick={onCancelEdit}>
 										<X className="h-4 w-4" />
 									</Button>
 								</>
@@ -777,7 +691,6 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 
 				<div className="space-y-3">
 					<h4 className="font-medium text-gray-900">Pólizas ({letter.policies.length})</h4>
-
 					{editedLetter.policies.map((policy, index) => (
 						<div key={index} className="p-3 bg-white rounded border">
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -786,104 +699,90 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 									<div className="text-gray-600">Póliza: {policy.policyNumber}</div>
 									<div className="text-gray-600">Vence: {policy.expiryDate}</div>
 								</div>
-
 								<div>
 									<div className="text-gray-600">Ramo: {policy.branch}</div>
-									<div className="text-gray-600">Valor Original: {policy.manualFields?.originalInsuredValue ? formatUSD(policy.manualFields.originalInsuredValue) : "No especificado"}</div>
-									<div className="text-gray-600">Prima Original: {policy.manualFields?.originalPremium ? formatCurrency(policy.manualFields.originalPremium) : "No especificado"}</div>
+									<div className="text-gray-600">Valor Original: {policy.manualFields?.originalInsuredValue ? formatUSD(policy.manualFields.originalInsuredValue) : "N/A"}</div>
+									<div className="text-gray-600">Prima Original: {policy.manualFields?.originalPremium ? formatCurrency(policy.manualFields.originalPremium) : "N/A"}</div>
 									<div className="text-gray-600 mt-1">
-										Materia Asegurada Original: <span className="italic">{policy.manualFields?.originalInsuredMatter || "No especificado"}</span>
+										Materia Asegurada Original: <span className="italic">{policy.manualFields?.originalInsuredMatter || "N/A"}</span>
 									</div>
 								</div>
-
 								<div className="space-y-2">
 									{isEditing && (
 										<>
 											<NumericInput
 												label="Valor Asegurado (editable):"
 												value={policy.manualFields?.insuredValue || 0}
-												onChange={(value) => updatePolicy(index, "insuredValue", value)}
+												onChange={(v) => updatePolicy(index, "insuredValue", v)}
 												placeholder="0.00"
 												className="text-xs h-8"
 											/>
-
 											<NumericInput
 												label="Prima (editable):"
 												value={policy.manualFields?.premium || 0}
-												onChange={(value) => updatePolicy(index, "premium", value)}
+												onChange={(v) => updatePolicy(index, "premium", v)}
 												placeholder="0.00"
 												className="text-xs h-8"
 											/>
-
 											{letter.templateType === "salud" && (
 												<NumericInput
 													label="Prima renovación (USD):"
 													value={policy.manualFields?.renewalPremium || 0}
-													onChange={(value) => updatePolicy(index, "renewalPremium", value)}
+													onChange={(v) => updatePolicy(index, "renewalPremium", v)}
 													placeholder="0.00"
 													className="text-xs h-8"
 												/>
 											)}
-
 											{letter.templateType === "general" && (
 												<>
 													<ConditionsTextarea
 														label="Materia Asegurada (editable):"
 														value={policy.manualFields?.insuredMatter || ""}
-														onChange={(value) => updatePolicy(index, "insuredMatter", value)}
-														placeholder="Describa la materia asegurada..."
+														onChange={(v) => updatePolicy(index, "insuredMatter", v)}
+														placeholder="Describa la materia..."
 													/>
-
 													<NumericInputWithCurrency
 														label="Deducibles:"
 														value={policy.manualFields?.deductibles}
 														currency={policy.manualFields?.deductiblesCurrency || "Bs."}
-														onValueChange={(value) => updatePolicy(index, "deductibles", value)}
-														onCurrencyChange={(currency) => updatePolicy(index, "deductiblesCurrency", currency)}
+														onValueChange={(v) => updatePolicy(index, "deductibles", v)}
+														onCurrencyChange={(c) => updatePolicy(index, "deductiblesCurrency", c)}
 														placeholder="0.00"
 														className="text-xs h-8"
 													/>
-
 													<NumericInputWithCurrency
 														label="Extraterritorialidad:"
 														value={policy.manualFields?.territoriality}
 														currency={policy.manualFields?.territorialityCurrency || "Bs."}
-														onValueChange={(value) => updatePolicy(index, "territoriality", value)}
-														onCurrencyChange={(currency) => updatePolicy(index, "territorialityCurrency", currency)}
+														onValueChange={(v) => updatePolicy(index, "territoriality", v)}
+														onCurrencyChange={(c) => updatePolicy(index, "territorialityCurrency", c)}
 														placeholder="0.00"
 														className="text-xs h-8"
 													/>
-
 													<ConditionsTextarea
 														label="Condiciones específicas:"
 														value={policy.manualFields?.specificConditions || ""}
-														onChange={(value) => updatePolicy(index, "specificConditions", value)}
-														placeholder="Describa condiciones adicionales, coberturas especiales, etc."
+														onChange={(v) => updatePolicy(index, "specificConditions", v)}
+														placeholder="Condiciones adicionales..."
 													/>
 												</>
 											)}
 										</>
 									)}
-
 									{!isEditing && policy.manualFields && (
 										<div className="text-xs space-y-1">
-											{policy.manualFields.insuredValue !== undefined && policy.manualFields.insuredValue !== null && (
-												<div className="text-green-700 font-medium">✓ Valor Asegurado (editable): {formatUSD(policy.manualFields.insuredValue)}</div>
-											)}
-											{policy.manualFields.premium !== undefined && policy.manualFields.premium !== null && (
-												<div className="text-green-700 font-medium">✓ Prima (editable): {formatCurrency(policy.manualFields.premium)}</div>
-											)}
-
-											{letter.templateType === "salud" && policy.manualFields.renewalPremium !== undefined && policy.manualFields.renewalPremium !== null && (
+											{policy.manualFields.insuredValue !== undefined && <div className="text-green-700 font-medium">✓ Valor Asegurado: {formatUSD(policy.manualFields.insuredValue)}</div>}
+											{policy.manualFields.premium !== undefined && <div className="text-green-700 font-medium">✓ Prima: {formatCurrency(policy.manualFields.premium)}</div>}
+											{letter.templateType === "salud" && policy.manualFields.renewalPremium !== undefined && (
 												<div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>
 											)}
 											{letter.templateType === "general" && (
 												<>
-													{policy.manualFields.insuredMatter && <div className="text-green-700 font-medium">✓ Materia Asegurada: {policy.manualFields.insuredMatter}</div>}
-													{policy.manualFields.deductibles !== undefined && policy.manualFields.deductibles !== null && (
+													{policy.manualFields.insuredMatter && <div className="text-green-700 font-medium">✓ Materia: {policy.manualFields.insuredMatter}</div>}
+													{policy.manualFields.deductibles !== undefined && (
 														<div className="text-green-700 font-medium">✓ Deducibles: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</div>
 													)}
-													{policy.manualFields.territoriality !== undefined && policy.manualFields.territoriality !== null && (
+													{policy.manualFields.territoriality !== undefined && (
 														<div className="text-green-700 font-medium">
 															✓ Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
 														</div>

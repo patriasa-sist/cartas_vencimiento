@@ -136,11 +136,9 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			}));
 		}
 
-		const missingData = detectMissingData(policies, templateType);
-
-		return {
+		const letterDataBase = {
 			id: `letter_${Date.now()}_${index}`,
-			sourceRecordIds, // Añadido
+			sourceRecordIds,
 			templateType,
 			referenceNumber: generateReferenceNumber(),
 			date: formatDate(new Date()),
@@ -152,6 +150,12 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			},
 			policies,
 			executive: firstRecord.ejecutivo,
+		};
+
+		const missingData = detectMissingData(letterDataBase);
+
+		return {
+			...letterDataBase,
 			needsReview: missingData.length > 0 || templateType === "general",
 			missingData,
 		};
@@ -161,13 +165,17 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 /**
  * Detecta datos faltantes que requieren intervención manual
  */
-export function detectMissingData(policies: PolicyForLetter[], templateType: "salud" | "general"): string[] {
+export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "missingData">): string[] {
 	const missing: string[] = [];
 
-	policies.forEach((policy, index) => {
+	if (letterData.referenceNumber.includes("____")) {
+		missing.push("Número de Referencia manual");
+	}
+
+	letterData.policies.forEach((policy, index) => {
 		const policyLabel = `Póliza ${index + 1} (${policy.policyNumber})`;
 
-		if (templateType === "salud") {
+		if (letterData.templateType === "salud") {
 			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
 				missing.push(`${policyLabel}: Prima de renovación anual`);
 			}
@@ -182,10 +190,10 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 			if (!policy.manualFields?.insuredMatter) {
 				missing.push(`${policyLabel}: Materia Asegurada`);
 			}
-			if (!policy.manualFields?.deductibles || policy.manualFields.deductibles <= 0) {
+			if (policy.manualFields?.deductibles === undefined || policy.manualFields?.deductibles === null || policy.manualFields.deductibles <= 0) {
 				missing.push(`${policyLabel}: Información de deducibles`);
 			}
-			if (!policy.manualFields?.territoriality || policy.manualFields.territoriality <= 0) {
+			if (policy.manualFields?.territoriality === undefined || policy.manualFields?.territoriality === null || policy.manualFields.territoriality <= 0) {
 				missing.push(`${policyLabel}: Información de extraterritorialidad`);
 			}
 			if (!policy.manualFields?.specificConditions) {
@@ -198,16 +206,13 @@ export function detectMissingData(policies: PolicyForLetter[], templateType: "sa
 }
 
 /**
- * Genera número de referencia automático
+ * Genera número de referencia con un placeholder para entrada manual.
  */
 export function generateReferenceNumber(): string {
 	const now = new Date();
 	const year = now.getFullYear();
-	const random = Math.floor(Math.random() * 10000)
-		.toString()
-		.padStart(4, "0");
-
-	return `SCPSA-${random}/${year}`;
+	// Retorna un placeholder para ser llenado manualmente
+	return `SCPSA-____/${year}`;
 }
 
 /**
