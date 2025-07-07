@@ -39,12 +39,14 @@ export interface PolicyForLetter {
 		// Campos para Pólizas Generales (Automotores)
 		vehicles?: VehicleForLetter[];
 		originalVehicles?: VehicleForLetter[];
+		premium?: number;
+		premiumCurrency?: "Bs." | "$us."; // Moneda para la prima total de pólizas generales
 
 		// Campos para Pólizas de Salud
 		insuredMembers?: string[];
 		originalInsuredMembers?: string[];
 		renewalPremium?: number;
-		renewalPremiumCurrency?: "Bs." | "$us."; // Moneda para la prima de renovación
+		renewalPremiumCurrency?: "Bs." | "$us."; // Moneda para la prima de renovación de salud
 
 		// Campos comunes
 		specificConditions?: string;
@@ -52,7 +54,6 @@ export interface PolicyForLetter {
 		deductiblesCurrency?: "Bs." | "$us.";
 		territoriality?: number;
 		territorialityCurrency?: "Bs." | "$us.";
-		premium?: number;
 		originalPremium?: number;
 		coinsurance?: string;
 	};

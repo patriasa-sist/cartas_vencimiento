@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { BaseTemplate } from "./BaseTemplate";
 import { LetterData } from "@/types/pdf";
-import { formatUSD, formatCurrency } from "@/utils/pdfutils";
+import { formatUSD } from "@/utils/pdfutils";
 
 const generalStyles = StyleSheet.create({
 	policyTable: {
@@ -154,7 +154,7 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "20%" }]}>
-							<Text style={generalStyles.cellText}>{policy.manualFields?.premium ? formatCurrency(policy.manualFields.premium) : "N/A"}</Text>
+							<Text style={generalStyles.cellText}>{formatMonetaryValue(policy.manualFields?.premium, policy.manualFields?.premiumCurrency)}</Text>
 						</View>
 					</View>
 				))}

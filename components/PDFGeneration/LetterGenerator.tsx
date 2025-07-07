@@ -830,7 +830,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 									<div className="text-gray-600">Ramo: {policy.branch}</div>
 								</div>
 								<div>
-									<div className="text-gray-600">Prima Original: {policy.manualFields?.originalPremium ? formatCurrency(policy.manualFields.originalPremium) : "N/A"}</div>
+									<div className="text-gray-600">Prima Original: {formatMonetaryValue(policy.manualFields?.originalPremium, "Bs.")}</div>
 									{letter.templateType === "general" && (
 										<div className="mt-1">
 											<div className="text-gray-600">Vehículos Originales:</div>
@@ -847,25 +847,44 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 											{letter.templateType === "salud" ? (
 												<>
-													<NumericInputWithCurrency
-														label="Prima renovación:"
-														value={policy.manualFields?.renewalPremium}
-														currency={policy.manualFields?.renewalPremiumCurrency || "$us."}
-														onValueChange={(v) => updatePolicy(index, "renewalPremium", v)}
-														onCurrencyChange={(c) => updatePolicy(index, "renewalPremiumCurrency", c)}
-														placeholder="0.00"
-														className="text-xs h-8"
-													/>
-													<InsuredMembersEditor
-														label="Asegurados (editable):"
-														members={policy.manualFields?.insuredMembers || []}
-														onChange={(newMembers) => updatePolicy(index, "insuredMembers", newMembers)}
-													/>
+													<div className="space-y-2">
+														<InsuredMembersEditor
+															label="Asegurados (editable):"
+															members={policy.manualFields?.insuredMembers || []}
+															onChange={(newMembers) => updatePolicy(index, "insuredMembers", newMembers)}
+														/>
+													</div>
+													<div className="space-y-2">
+														<NumericInputWithCurrency
+															label="Prima renovación:"
+															value={policy.manualFields?.renewalPremium}
+															currency={policy.manualFields?.renewalPremiumCurrency || "$us."}
+															onValueChange={(v) => updatePolicy(index, "renewalPremium", v)}
+															onCurrencyChange={(c) => updatePolicy(index, "renewalPremiumCurrency", c)}
+															placeholder="0.00"
+															className="text-xs h-8"
+														/>
+													</div>
 												</>
 											) : (
 												<>
-													<VehicleEditor label="Vehículos Asegurados (editable):" vehicles={policy.manualFields?.vehicles || []} onChange={(newVehicles) => updatePolicyVehicles(index, newVehicles)} />
 													<div className="space-y-2">
+														<VehicleEditor
+															label="Vehículos Asegurados (editable):"
+															vehicles={policy.manualFields?.vehicles || []}
+															onChange={(newVehicles) => updatePolicyVehicles(index, newVehicles)}
+														/>
+													</div>
+													<div className="space-y-2">
+														<NumericInputWithCurrency
+															label="Prima Total:"
+															value={policy.manualFields?.premium}
+															currency={policy.manualFields?.premiumCurrency || "Bs."}
+															onValueChange={(v) => updatePolicy(index, "premium", v)}
+															onCurrencyChange={(c) => updatePolicy(index, "premiumCurrency", c)}
+															placeholder="0.00"
+															className="text-xs h-8"
+														/>
 														<NumericInputWithCurrency
 															label="Deducibles:"
 															value={policy.manualFields?.deductibles}
@@ -915,6 +934,9 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 												</>
 											) : (
 												<>
+													{policy.manualFields?.premium !== undefined && (
+														<div className="text-green-700 font-medium">✓ Prima Total: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
+													)}
 													<div className="text-green-700 font-medium">✓ Vehículos:</div>
 													<ul className="list-disc list-inside pl-2">
 														{(policy.manualFields?.vehicles || []).map((v, i) => (

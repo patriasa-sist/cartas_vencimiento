@@ -131,6 +131,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 						originalVehicles: JSON.parse(JSON.stringify(vehicles)), // Deep copy
 						premium: totalPremium,
 						originalPremium: totalPremium,
+						premiumCurrency: "Bs.", // Moneda por defecto para generales
 						deductiblesCurrency: "Bs.",
 						territorialityCurrency: "Bs.",
 					},
@@ -187,14 +188,16 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 			}
 		} else {
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
-				missing.push(`${policyLabel}: Prima`);
+				missing.push(`${policyLabel}: Prima Total`);
+			}
+			if (!policy.manualFields?.premiumCurrency) {
+				missing.push(`${policyLabel}: Moneda de la Prima Total`);
 			}
 			if (!policy.manualFields?.vehicles || policy.manualFields.vehicles.length === 0) {
 				missing.push(`${policyLabel}: No se encontraron vehículos.`);
 			} else {
 				policy.manualFields.vehicles.forEach((vehicle, vIndex) => {
 					if (!vehicle.description) missing.push(`${policyLabel}, Vehículo ${vIndex + 1}: Falta descripción.`);
-					// AHORA SOLO VALIDAMOS VALOR DECLARADO, YA QUE EL ASEGURADO VIENE DEL EXCEL
 					if (!vehicle.declaredValue || vehicle.declaredValue <= 0) missing.push(`${policyLabel}, Vehículo ${vIndex + 1}: Falta valor declarado.`);
 				});
 			}
