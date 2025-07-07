@@ -102,6 +102,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 						originalPremium: mainRecord.prima,
 						insuredMembers: [...insuredMembers],
 						originalInsuredMembers: [...insuredMembers],
+						renewalPremiumCurrency: "$us.", // Moneda por defecto para salud
 						deductiblesCurrency: "Bs.",
 						territorialityCurrency: "Bs.",
 					},
@@ -180,6 +181,9 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 		if (letterData.templateType === "salud") {
 			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
 				missing.push(`${policyLabel}: Prima de renovación anual`);
+			}
+			if (!policy.manualFields?.renewalPremiumCurrency) {
+				missing.push(`${policyLabel}: Moneda de la prima de renovación`);
 			}
 		} else {
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {

@@ -847,10 +847,12 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 											{letter.templateType === "salud" ? (
 												<>
-													<NumericInput
-														label="Prima renovación (USD):"
-														value={policy.manualFields?.renewalPremium || 0}
-														onChange={(v) => updatePolicy(index, "renewalPremium", v)}
+													<NumericInputWithCurrency
+														label="Prima renovación:"
+														value={policy.manualFields?.renewalPremium}
+														currency={policy.manualFields?.renewalPremiumCurrency || "$us."}
+														onValueChange={(v) => updatePolicy(index, "renewalPremium", v)}
+														onCurrencyChange={(c) => updatePolicy(index, "renewalPremiumCurrency", c)}
 														placeholder="0.00"
 														className="text-xs h-8"
 													/>
@@ -897,7 +899,9 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 										<div className="text-xs space-y-1">
 											{letter.templateType === "salud" ? (
 												<>
-													{policy.manualFields?.renewalPremium !== undefined && <div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>}
+													{policy.manualFields?.renewalPremium !== undefined && (
+														<div className="text-green-700 font-medium">✓ Prima renovación: {formatMonetaryValue(policy.manualFields.renewalPremium, policy.manualFields.renewalPremiumCurrency)}</div>
+													)}
 													{policy.insuredMembers && policy.insuredMembers.length > 0 && (
 														<div>
 															<div className="text-green-700 font-medium">✓ Asegurados:</div>

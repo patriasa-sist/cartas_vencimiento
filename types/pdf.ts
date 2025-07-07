@@ -44,6 +44,7 @@ export interface PolicyForLetter {
 		insuredMembers?: string[];
 		originalInsuredMembers?: string[];
 		renewalPremium?: number;
+		renewalPremiumCurrency?: "Bs." | "$us."; // Moneda para la prima de renovación
 
 		// Campos comunes
 		specificConditions?: string;

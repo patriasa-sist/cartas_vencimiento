@@ -3,7 +3,6 @@ import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { BaseTemplate } from "./BaseTemplate";
 import { LetterData } from "@/types/pdf";
-import { formatUSD } from "@/utils/pdfutils";
 
 const healthStyles = StyleSheet.create({
 	policyTable: {
@@ -69,6 +68,21 @@ interface HealthTemplateProps {
 }
 
 export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) => {
+	// Helper function to format currency based on value and type
+	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
+		if (value === undefined || value === null || isNaN(value)) {
+			return "A confirmar";
+		}
+		const numberFormatter = new Intl.NumberFormat("es-BO", {
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+		});
+		const formattedValue = numberFormatter.format(value);
+		if (currency === "Bs.") return `Bs. ${formattedValue}`;
+		if (currency === "$us.") return `$us. ${formattedValue}`;
+		return value.toString(); // Fallback
+	};
+
 	return (
 		<BaseTemplate letterData={letterData}>
 			{letterData.policies.map((policy, policyIndex) => {
@@ -111,7 +125,7 @@ export const HealthTemplate: React.FC<HealthTemplateProps> = ({ letterData }) =>
 									<Text style={healthStyles.cellText}>{policy.branch}</Text>
 								</View>
 								<View style={[healthStyles.tableCol, { width: "20%" }]}>
-									<Text style={healthStyles.cellText}>{policy.manualFields?.renewalPremium ? formatUSD(policy.manualFields.renewalPremium) : "A confirmar"}</Text>
+									<Text style={healthStyles.cellText}>{formatMonetaryValue(policy.manualFields?.renewalPremium, policy.manualFields?.renewalPremiumCurrency)}</Text>
 								</View>
 							</View>
 						</View>
