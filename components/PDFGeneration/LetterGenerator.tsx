@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone, PlusCircle, MessageSquare } from "lucide-react";
+import { FileText, Download, Eye, AlertTriangle, CheckCircle, X, Edit3, Save, RefreshCw, Package, Printer, Mail, Phone, PlusCircle, MessageSquare, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProcessedInsuranceRecord } from "@/types/insurance";
-import { LetterData, GeneratedLetter, PDFGenerationResult, PolicyForLetter } from "@/types/pdf";
+import { LetterData, GeneratedLetter, PDFGenerationResult, PolicyForLetter, VehicleForLetter } from "@/types/pdf";
 import { groupRecordsForLetters, validateRecordForPDF, generateFileName, formatUSD, formatCurrency, determineTemplateType, detectMissingData } from "@/utils/pdfutils";
 import { cleanPhoneNumber, createWhatsAppMessage } from "@/utils/whatsapp";
 import { pdf } from "@react-pdf/renderer";
@@ -32,7 +32,7 @@ interface LetterGeneratorProps {
 	onGenerated?: (result: PDFGenerationResult) => void;
 }
 
-// Componente para input numérico validado
+// Componente para input numérico validado (MEJORADO)
 interface NumericInputProps {
 	value: number | string;
 	onChange: (value: number) => void;
@@ -42,10 +42,11 @@ interface NumericInputProps {
 }
 
 function NumericInput({ value, onChange, placeholder, className, label }: NumericInputProps) {
-	const [displayValue, setDisplayValue] = useState(String(value || ""));
+	// Si el valor inicial es 0, se muestra como vacío para incitar al usuario a rellenarlo.
+	const [displayValue, setDisplayValue] = useState(value ? String(value) : "");
 
 	useEffect(() => {
-		setDisplayValue(String(value || ""));
+		setDisplayValue(value ? String(value) : "");
 	}, [value]);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +82,7 @@ function NumericInput({ value, onChange, placeholder, className, label }: Numeri
 	);
 }
 
-// Nuevo componente para input numérico con selección de moneda
+// Componente para input numérico con selección de moneda
 interface NumericInputWithCurrencyProps {
 	value: number | undefined;
 	currency: "Bs." | "$us.";
@@ -167,7 +168,7 @@ function ConditionsTextarea({ value, onChange, placeholder, label, rows = 3 }: C
 	);
 }
 
-// Componente para editar la lista de asegurados
+// Componente para editar la lista de asegurados (Salud)
 interface InsuredMembersEditorProps {
 	members: string[];
 	onChange: (newMembers: string[]) => void;
@@ -205,6 +206,69 @@ function InsuredMembersEditor({ members, onChange, label }: InsuredMembersEditor
 				<Button type="button" size="sm" variant="outline" onClick={addMember} className="text-xs h-8">
 					<PlusCircle className="h-4 w-4 mr-2" />
 					Añadir Asegurado
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+// NUEVO: Componente para editar la lista de vehículos
+interface VehicleEditorProps {
+	vehicles: VehicleForLetter[];
+	onChange: (newVehicles: VehicleForLetter[]) => void;
+	label?: string;
+}
+
+function VehicleEditor({ vehicles, onChange, label }: VehicleEditorProps) {
+	const handleVehicleChange = (index: number, field: keyof Omit<VehicleForLetter, "id">, value: string | number) => {
+		const newVehicles = vehicles.map((v, i) => (i === index ? { ...v, [field]: value } : v));
+		onChange(newVehicles);
+	};
+
+	const addVehicle = () => {
+		onChange([
+			...vehicles,
+			{
+				id: `new_vehicle_${Date.now()}`,
+				description: "",
+				declaredValue: 0,
+				insuredValue: 0,
+			},
+		]);
+	};
+
+	const removeVehicle = (id: string) => {
+		onChange(vehicles.filter((v) => v.id !== id));
+	};
+
+	return (
+		<div>
+			{label && <label className="text-xs text-gray-600 block mb-2 font-medium">{label}</label>}
+			<div className="space-y-3">
+				{vehicles.map((vehicle, index) => (
+					<div key={vehicle.id} className="p-3 bg-gray-50 rounded-md border space-y-2">
+						<div className="flex justify-between items-center">
+							<span className="text-xs font-semibold text-gray-700">Vehículo {index + 1}</span>
+							<Button type="button" size="sm" variant="ghost" onClick={() => removeVehicle(vehicle.id)} className="h-7 w-7 p-0 text-red-500 hover:bg-red-100">
+								<Trash2 className="h-4 w-4" />
+							</Button>
+						</div>
+						<Input
+							type="text"
+							value={vehicle.description}
+							onChange={(e) => handleVehicleChange(index, "description", e.target.value)}
+							className="text-xs h-8"
+							placeholder="Descripción del vehículo (ej. Vagoneta Toyota TACOMA)"
+						/>
+						<div className="grid grid-cols-2 gap-2">
+							<NumericInput label="Valor Declarado ($us.)" value={vehicle.declaredValue} onChange={(v) => handleVehicleChange(index, "declaredValue", v)} className="text-xs h-8" placeholder="0.00" />
+							<NumericInput label="Valor Asegurado ($us.)" value={vehicle.insuredValue} onChange={(v) => handleVehicleChange(index, "insuredValue", v)} className="text-xs h-8" placeholder="0.00" />
+						</div>
+					</div>
+				))}
+				<Button type="button" size="sm" variant="outline" onClick={addVehicle} className="text-xs h-8 mt-2">
+					<PlusCircle className="h-4 w-4 mr-2" />
+					Añadir Vehículo
 				</Button>
 			</div>
 		</div>
@@ -617,6 +681,20 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 		handleFieldChange("policies", updatedPolicies);
 	};
 
+	const updatePolicyVehicles = (policyIndex: number, newVehicles: VehicleForLetter[]) => {
+		const updatedPolicies = editedLetter.policies.map((policy, index) => {
+			if (index === policyIndex) {
+				const updatedManualFields = {
+					...policy.manualFields,
+					vehicles: newVehicles,
+				};
+				return { ...policy, manualFields: updatedManualFields };
+			}
+			return policy;
+		});
+		handleFieldChange("policies", updatedPolicies);
+	};
+
 	const getTemplateIcon = (type: "salud" | "general") => (type === "salud" ? "🏥" : "🚗");
 	const getTemplateColor = (type: "salud" | "general") => (type === "salud" ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50");
 
@@ -749,33 +827,25 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 									<div className="font-medium text-gray-900">{policy.company}</div>
 									<div className="text-gray-600">Póliza: {policy.policyNumber}</div>
 									<div className="text-gray-600">Vence: {policy.expiryDate}</div>
+									<div className="text-gray-600">Ramo: {policy.branch}</div>
 								</div>
 								<div>
-									<div className="text-gray-600">Ramo: {policy.branch}</div>
-									<div className="text-gray-600">Valor Original: {policy.manualFields?.originalInsuredValue ? formatUSD(policy.manualFields.originalInsuredValue) : "N/A"}</div>
 									<div className="text-gray-600">Prima Original: {policy.manualFields?.originalPremium ? formatCurrency(policy.manualFields.originalPremium) : "N/A"}</div>
-									<div className="text-gray-600 mt-1">
-										Materia Asegurada Original: <span className="italic">{policy.manualFields?.originalInsuredMatter || "N/A"}</span>
-									</div>
+									{letter.templateType === "general" && (
+										<div className="mt-1">
+											<div className="text-gray-600">Vehículos Originales:</div>
+											<ul className="list-disc list-inside pl-2 italic text-gray-500">
+												{(policy.manualFields?.originalVehicles || []).map((v, i) => (
+													<li key={i}>{v.description}</li>
+												))}
+											</ul>
+										</div>
+									)}
 								</div>
-								<div className="space-y-2">
-									{isEditing && (
-										<>
-											<NumericInput
-												label="Valor Asegurado (editable):"
-												value={policy.manualFields?.insuredValue || 0}
-												onChange={(v) => updatePolicy(index, "insuredValue", v)}
-												placeholder="0.00"
-												className="text-xs h-8"
-											/>
-											<NumericInput
-												label="Prima (editable):"
-												value={policy.manualFields?.premium || 0}
-												onChange={(v) => updatePolicy(index, "premium", v)}
-												placeholder="0.00"
-												className="text-xs h-8"
-											/>
-											{letter.templateType === "salud" && (
+								<div className="space-y-2 md:col-span-3">
+									{isEditing ? (
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											{letter.templateType === "salud" ? (
 												<>
 													<NumericInput
 														label="Prima renovación (USD):"
@@ -790,50 +860,42 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														onChange={(newMembers) => updatePolicy(index, "insuredMembers", newMembers)}
 													/>
 												</>
-											)}
-											{letter.templateType === "general" && (
+											) : (
 												<>
-													<ConditionsTextarea
-														label="Materia Asegurada (editable):"
-														value={policy.manualFields?.insuredMatter || ""}
-														onChange={(v) => updatePolicy(index, "insuredMatter", v)}
-														placeholder="Describa la materia..."
-														rows={2}
-													/>
-													<NumericInputWithCurrency
-														label="Deducibles:"
-														value={policy.manualFields?.deductibles}
-														currency={policy.manualFields?.deductiblesCurrency || "Bs."}
-														onValueChange={(v) => updatePolicy(index, "deductibles", v)}
-														onCurrencyChange={(c) => updatePolicy(index, "deductiblesCurrency", c)}
-														placeholder="0.00"
-														className="text-xs h-8"
-													/>
-													<NumericInputWithCurrency
-														label="Extraterritorialidad:"
-														value={policy.manualFields?.territoriality}
-														currency={policy.manualFields?.territorialityCurrency || "Bs."}
-														onValueChange={(v) => updatePolicy(index, "territoriality", v)}
-														onCurrencyChange={(c) => updatePolicy(index, "territorialityCurrency", c)}
-														placeholder="0.00"
-														className="text-xs h-8"
-													/>
-													<ConditionsTextarea
-														label="Condiciones específicas:"
-														value={policy.manualFields?.specificConditions || ""}
-														onChange={(v) => updatePolicy(index, "specificConditions", v)}
-														placeholder="Condiciones adicionales..."
-														rows={2}
-													/>
+													<VehicleEditor label="Vehículos Asegurados (editable):" vehicles={policy.manualFields?.vehicles || []} onChange={(newVehicles) => updatePolicyVehicles(index, newVehicles)} />
+													<div className="space-y-2">
+														<NumericInputWithCurrency
+															label="Deducibles:"
+															value={policy.manualFields?.deductibles}
+															currency={policy.manualFields?.deductiblesCurrency || "Bs."}
+															onValueChange={(v) => updatePolicy(index, "deductibles", v)}
+															onCurrencyChange={(c) => updatePolicy(index, "deductiblesCurrency", c)}
+															placeholder="0.00"
+															className="text-xs h-8"
+														/>
+														<NumericInputWithCurrency
+															label="Extraterritorialidad:"
+															value={policy.manualFields?.territoriality}
+															currency={policy.manualFields?.territorialityCurrency || "Bs."}
+															onValueChange={(v) => updatePolicy(index, "territoriality", v)}
+															onCurrencyChange={(c) => updatePolicy(index, "territorialityCurrency", c)}
+															placeholder="0.00"
+															className="text-xs h-8"
+														/>
+														<ConditionsTextarea
+															label="Condiciones específicas:"
+															value={policy.manualFields?.specificConditions || ""}
+															onChange={(v) => updatePolicy(index, "specificConditions", v)}
+															placeholder="Condiciones adicionales..."
+															rows={2}
+														/>
+													</div>
 												</>
 											)}
-										</>
-									)}
-									{!isEditing && (
+										</div>
+									) : (
 										<div className="text-xs space-y-1">
-											{policy.manualFields?.insuredValue !== undefined && <div className="text-green-700 font-medium">✓ Valor Asegurado: {formatUSD(policy.manualFields.insuredValue)}</div>}
-											{policy.manualFields?.premium !== undefined && <div className="text-green-700 font-medium">✓ Prima: {formatCurrency(policy.manualFields.premium)}</div>}
-											{letter.templateType === "salud" && (
+											{letter.templateType === "salud" ? (
 												<>
 													{policy.manualFields?.renewalPremium !== undefined && <div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>}
 													{policy.insuredMembers && policy.insuredMembers.length > 0 && (
@@ -847,10 +909,16 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														</div>
 													)}
 												</>
-											)}
-											{letter.templateType === "general" && (
+											) : (
 												<>
-													{policy.manualFields?.insuredMatter && <div className="text-green-700 font-medium">✓ Materia: {policy.manualFields.insuredMatter}</div>}
+													<div className="text-green-700 font-medium">✓ Vehículos:</div>
+													<ul className="list-disc list-inside pl-2">
+														{(policy.manualFields?.vehicles || []).map((v, i) => (
+															<li key={i}>
+																{v.description} - Declarado: {formatUSD(v.declaredValue)} / Asegurado: {formatUSD(v.insuredValue)}
+															</li>
+														))}
+													</ul>
 													{policy.manualFields?.deductibles !== undefined && (
 														<div className="text-green-700 font-medium">✓ Deducibles: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</div>
 													)}

@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { BaseTemplate } from "./BaseTemplate";
 import { LetterData } from "@/types/pdf";
-import { formatUSD, formatCurrency } from "@/utils/pdfutils"; // Import formatCurrency
+import { formatUSD, formatCurrency } from "@/utils/pdfutils";
 
 const generalStyles = StyleSheet.create({
 	policyTable: {
@@ -16,7 +16,6 @@ const generalStyles = StyleSheet.create({
 	tableRow: {
 		flexDirection: "row",
 	},
-	// Estilo para las celdas de datos y encabezado, ahora con anchos explícitos
 	tableCol: {
 		borderStyle: "solid",
 		borderWidth: 1,
@@ -24,10 +23,9 @@ const generalStyles = StyleSheet.create({
 		borderTopWidth: 0,
 		borderColor: "#e5e7eb",
 		padding: 5,
-		// No usamos flex: 1 aquí, en su lugar, definiremos el ancho directamente en las celdas
-		textAlign: "center", // Centra el texto
-		justifyContent: "center", // Centra el contenido verticalmente
-		alignItems: "center", // Centra el contenido horizontalmente
+		textAlign: "center",
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	headerText: {
 		fontWeight: "bold",
@@ -39,41 +37,64 @@ const generalStyles = StyleSheet.create({
 		fontSize: 8,
 		textAlign: "center",
 	},
-	// Estilos específicos para celdas con contenido potencialmente largo
 	policyNumberCellText: {
-		fontSize: 7, // Tamaño de fuente más pequeño para números de póliza largos
+		fontSize: 7,
 		textAlign: "center",
 	},
-	conditionsBox: {
+	detailsBox: {
 		backgroundColor: "#f8f9fa",
 		padding: 8,
 		marginBottom: 10,
 		borderWidth: 1,
 		borderColor: "#dee2e6",
+		borderRadius: 4,
 	},
-	conditionsTitle: {
+	detailsTitle: {
 		fontSize: 10,
 		fontWeight: "bold",
 		marginBottom: 8,
 		color: "#172554",
 	},
-	conditionText: {
+	detailText: {
 		fontSize: 9,
 		marginBottom: 5,
 		lineHeight: 1.3,
 	},
-	missingDataBox: {
-		backgroundColor: "#fee2e2",
-		padding: 8,
-		marginBottom: 10,
+	// NUEVOS ESTILOS PARA LA SUB-TABLA DE VEHÍCULOS
+	subTable: {
+		width: "100%",
+		borderStyle: "solid",
 		borderWidth: 1,
-		borderColor: "#fca5a5",
-		borderRadius: 4,
+		borderColor: "#dee2e6",
+		marginTop: 5,
+		marginBottom: 10,
 	},
-	missingDataText: {
-		fontSize: 8,
-		color: "#dc2626",
+	subTableHeader: {
+		flexDirection: "row",
+		backgroundColor: "#e9ecef",
+	},
+	subTableColHeader: {
+		borderStyle: "solid",
+		borderBottomWidth: 1,
+		borderColor: "#dee2e6",
+		padding: 4,
+		textAlign: "center",
+	},
+	subHeaderText: {
 		fontWeight: "bold",
+		fontSize: 7,
+		color: "#1f2937",
+	},
+	subTableRow: {
+		flexDirection: "row",
+	},
+	subTableCell: {
+		padding: 4,
+		fontSize: 7,
+		borderRightWidth: 1,
+		borderRightColor: "#e5e7eb",
+		borderBottomWidth: 1,
+		borderBottomColor: "#e5e7eb",
 	},
 });
 
@@ -82,106 +103,106 @@ interface GeneralTemplateProps {
 }
 
 export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) => {
-	// Helper function to format monetary values with currency symbol
 	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
 		if (value === undefined || value === null || isNaN(value)) {
 			return "No especificado";
 		}
-		let formattedValue: string;
 		const numberFormatter = new Intl.NumberFormat("es-BO", {
 			minimumFractionDigits: 2,
 			maximumFractionDigits: 2,
 		});
-
-		formattedValue = numberFormatter.format(value);
-
-		if (currency === "Bs.") {
-			return `Bs. ${formattedValue}`;
-		} else if (currency === "$us.") {
-			return `$us. ${formattedValue}`;
-		}
+		const formattedValue = numberFormatter.format(value);
+		if (currency === "Bs.") return `Bs. ${formattedValue}`;
+		if (currency === "$us.") return `$us. ${formattedValue}`;
 		return value.toString();
 	};
 
 	return (
 		<BaseTemplate letterData={letterData}>
-			{/* Policy Table */}
+			{/* Tabla principal de pólizas */}
 			<View style={generalStyles.policyTable}>
-				{/* Table Header */}
 				<View style={generalStyles.tableRow}>
 					<View style={[generalStyles.tableCol, { width: "15%" }]}>
-						<Text style={generalStyles.headerText}>FECHA DE VENCIMIENTO</Text>
+						<Text style={generalStyles.headerText}>VENCIMIENTO</Text>
 					</View>
 					<View style={[generalStyles.tableCol, { width: "25%" }]}>
-						{" "}
-						{/* Ancho aumentado para No. de Póliza */}
 						<Text style={generalStyles.headerText}>No. DE PÓLIZA</Text>
 					</View>
-					<View style={[generalStyles.tableCol, { width: "15%" }]}>
+					<View style={[generalStyles.tableCol, { width: "20%" }]}>
 						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
 					</View>
-					<View style={[generalStyles.tableCol, { width: "15%" }]}>
+					<View style={[generalStyles.tableCol, { width: "20%" }]}>
 						<Text style={generalStyles.headerText}>RAMO</Text>
 					</View>
-					<View style={[generalStyles.tableCol, { width: "30%" }]}>
-						<Text style={generalStyles.headerText}>VALOR ASEGURADO</Text>
+					<View style={[generalStyles.tableCol, { width: "20%" }]}>
+						<Text style={generalStyles.headerText}>PRIMA TOTAL</Text>
 					</View>
 				</View>
 
-				{/* Policy Rows */}
 				{letterData.policies.map((policy, index) => (
 					<View key={index} style={generalStyles.tableRow}>
 						<View style={[generalStyles.tableCol, { width: "15%" }]}>
 							<Text style={generalStyles.cellText}>{policy.expiryDate}</Text>
 						</View>
 						<View style={[generalStyles.tableCol, { width: "25%" }]}>
-							{" "}
-							{/* Ancho aumentado para No. de Póliza */}
-							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text> {/* Usar estilo específico */}
+							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={[generalStyles.tableCol, { width: "20%" }]}>
 							<Text style={generalStyles.cellText}>{policy.company}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
+						<View style={[generalStyles.tableCol, { width: "20%" }]}>
 							<Text style={generalStyles.cellText}>{policy.branch}</Text>
 						</View>
-						<View style={[generalStyles.tableCol, { width: "30%" }]}>
-							<Text style={generalStyles.cellText}>{policy.manualFields?.insuredValue ? formatUSD(policy.manualFields.insuredValue) : "No especificado"}</Text>
+						<View style={[generalStyles.tableCol, { width: "20%" }]}>
+							<Text style={generalStyles.cellText}>{policy.manualFields?.premium ? formatCurrency(policy.manualFields.premium) : "N/A"}</Text>
 						</View>
 					</View>
 				))}
 			</View>
 
-			{/* Materia Asegurada y Condiciones Específicas */}
-			{letterData.policies.some(
-				(p) => p.manualFields?.insuredMatter || p.manualFields?.deductibles !== undefined || p.manualFields?.territoriality !== undefined || p.manualFields?.specificConditions
-			) && (
-				<View style={generalStyles.conditionsBox}>
-					<Text style={generalStyles.conditionsTitle}>DETALLE DE LA PÓLIZA:</Text>
-					{letterData.policies.map((policy, index) => (
-						<View key={index} style={{ marginBottom: index < letterData.policies.length - 1 ? 10 : 0 }}>
-							<Text style={generalStyles.conditionText}>
-								<Text style={{ fontWeight: "bold" }}>Póliza {policy.policyNumber}:</Text>
-							</Text>
-							{policy.manualFields?.insuredMatter && <Text style={generalStyles.conditionText}>• Materia Asegurada: {policy.manualFields.insuredMatter}</Text>}
-							{policy.manualFields?.deductibles !== undefined && policy.manualFields?.deductibles !== null && (
-								<Text style={generalStyles.conditionText}>• Deducible coaseguro: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</Text>
-							)}
-							{policy.manualFields?.territoriality !== undefined && policy.manualFields?.territoriality !== null && (
-								<Text style={generalStyles.conditionText}>
-									• Extraterritorialidad (opcional): {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
-								</Text>
-							)}
-							{policy.manualFields?.specificConditions && (
-								<Text style={generalStyles.conditionText}>
-									• Condiciones Específicas:{"\n"}
-									{policy.manualFields.specificConditions}
-								</Text>
-							)}
+			{/* Sección de detalles por póliza */}
+			{letterData.policies.map((policy, policyIndex) => (
+				<View key={policyIndex} style={generalStyles.detailsBox}>
+					<Text style={generalStyles.detailsTitle}>DETALLE DE LA PÓLIZA: {policy.policyNumber}</Text>
+
+					{policy.manualFields?.vehicles && policy.manualFields.vehicles.length > 0 && (
+						<View style={generalStyles.subTable}>
+							<View style={generalStyles.subTableHeader}>
+								<View style={[generalStyles.subTableColHeader, { width: "50%" }]}>
+									<Text style={generalStyles.subHeaderText}>DETALLE DE VEHÍCULO</Text>
+								</View>
+								<View style={[generalStyles.subTableColHeader, { width: "25%" }]}>
+									<Text style={generalStyles.subHeaderText}>VALOR DECLARADO</Text>
+								</View>
+								<View style={[generalStyles.subTableColHeader, { width: "25%", borderRightWidth: 0 }]}>
+									<Text style={generalStyles.subHeaderText}>VALOR ASEGURADO</Text>
+								</View>
+							</View>
+							{policy.manualFields.vehicles.map((vehicle, vIndex) => (
+								<View key={vIndex} style={generalStyles.subTableRow}>
+									<View style={[generalStyles.subTableCell, { width: "50%", textAlign: "left" }]}>
+										<Text>{vehicle.description}</Text>
+									</View>
+									<View style={[generalStyles.subTableCell, { width: "25%" }]}>
+										<Text>{formatUSD(vehicle.declaredValue)}</Text>
+									</View>
+									<View style={[generalStyles.subTableCell, { width: "25%", borderRightWidth: 0 }]}>
+										<Text>{formatUSD(vehicle.insuredValue)}</Text>
+									</View>
+								</View>
+							))}
 						</View>
-					))}
+					)}
+
+					{policy.manualFields?.deductibles !== undefined && (
+						<Text style={generalStyles.detailText}>• Deducible coaseguro: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</Text>
+					)}
+					{policy.manualFields?.territoriality !== undefined && (
+						<Text style={generalStyles.detailText}>• Extraterritorialidad (opcional): {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}</Text>
+					)}
+					{policy.manualFields?.specificConditions && <Text style={generalStyles.detailText}>• Condiciones Específicas: {policy.manualFields.specificConditions}</Text>}
 				</View>
-			)}
+			))}
 		</BaseTemplate>
 	);
 };

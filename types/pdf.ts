@@ -2,6 +2,14 @@
 
 import { ProcessedInsuranceRecord } from "./insurance";
 
+// NUEVO: Interfaz para los detalles del vehículo
+export interface VehicleForLetter {
+	id: string; // ID único para el vehículo, útil para React keys
+	description: string;
+	declaredValue: number;
+	insuredValue: number;
+}
+
 export interface LetterData {
 	id: string;
 	sourceRecordIds: string[];
@@ -18,7 +26,7 @@ export interface LetterData {
 	executive: string;
 	needsReview: boolean;
 	missingData: string[];
-	additionalConditions?: string; // NUEVO: Campo para el texto editable
+	additionalConditions?: string;
 }
 
 export interface PolicyForLetter {
@@ -26,24 +34,25 @@ export interface PolicyForLetter {
 	policyNumber: string;
 	company: string;
 	branch: string;
-	insuredValue?: number;
-	premium?: number;
-	insuredMembers?: string[];
+	insuredMembers?: string[]; // Para pólizas de salud
 	manualFields?: {
-		insuredMatter?: string;
-		originalInsuredMatter?: string;
+		// Campos para Pólizas Generales (Automotores)
+		vehicles?: VehicleForLetter[];
+		originalVehicles?: VehicleForLetter[];
+
+		// Campos para Pólizas de Salud
 		insuredMembers?: string[];
 		originalInsuredMembers?: string[];
+		renewalPremium?: number;
+
+		// Campos comunes
 		specificConditions?: string;
 		deductibles?: number;
 		deductiblesCurrency?: "Bs." | "$us.";
 		territoriality?: number;
 		territorialityCurrency?: "Bs." | "$us.";
-		renewalPremium?: number;
 		premium?: number;
 		originalPremium?: number;
-		insuredValue?: number;
-		originalInsuredValue?: number;
 		coinsurance?: string;
 	};
 }

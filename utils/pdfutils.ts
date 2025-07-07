@@ -1,7 +1,7 @@
 // utils/pdfUtils.ts - Utilidades para generación de PDFs
 
 import { ProcessedInsuranceRecord } from "@/types/insurance";
-import { LetterData, PolicyForLetter } from "@/types/pdf";
+import { LetterData, PolicyForLetter, VehicleForLetter } from "@/types/pdf";
 
 // Constantes para los textos de plantilla
 const HEALTH_CONDITIONS_TEMPLATE = `Le informamos que a partir del *01/05/2025*, se excluye la cobertura del certificado asistencia al viajero y las pólizas se emiten en moneda nacional (BS)`;
@@ -44,7 +44,7 @@ export const PDF_CONSTANTS = {
  */
 export function determineTemplateType(ramo: string): "salud" | "general" {
 	const ramoLower = ramo.toLowerCase();
-	const saludKeywords = ["salud", "vida", "medic"];
+	const saludKeywords = ["salud", "vida", "medic", "asistencia medica"];
 	if (saludKeywords.some((keyword) => ramoLower.includes(keyword))) {
 		return "salud";
 	}
@@ -59,7 +59,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 
 	records.forEach((record) => {
 		const templateType = determineTemplateType(record.ramo);
-		const key = `${record.asegurado.trim()}_${templateType}`;
+		const key = `${record.asegurado.trim().toUpperCase()}_${templateType}`;
 		if (!groups[key]) {
 			groups[key] = [];
 		}
@@ -72,17 +72,17 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 		let policies: PolicyForLetter[] = [];
 		const sourceRecordIds = groupRecords.map((r) => r.id!).filter((id) => id);
 
-		if (templateType === "salud") {
-			const healthPolicyGroups: Record<string, ProcessedInsuranceRecord[]> = {};
-			groupRecords.forEach((record) => {
-				const policyKey = record.noPoliza;
-				if (!healthPolicyGroups[policyKey]) {
-					healthPolicyGroups[policyKey] = [];
-				}
-				healthPolicyGroups[policyKey].push(record);
-			});
+		const policyGroups: Record<string, ProcessedInsuranceRecord[]> = {};
+		groupRecords.forEach((record) => {
+			const policyKey = record.noPoliza.trim().toUpperCase();
+			if (!policyGroups[policyKey]) {
+				policyGroups[policyKey] = [];
+			}
+			policyGroups[policyKey].push(record);
+		});
 
-			policies = Object.values(healthPolicyGroups).map((policyGroup) => {
+		if (templateType === "salud") {
+			policies = Object.values(policyGroups).map((policyGroup) => {
 				const mainRecord = policyGroup.find((r) => !r.materiaAsegurada || r.materiaAsegurada.trim().toUpperCase() === r.asegurado.trim().toUpperCase()) || policyGroup[0];
 				const insuredMembers = [...new Set(policyGroup.map((r) => r.materiaAsegurada?.trim()).filter((name): name is string => !!name && name.toUpperCase() !== "TITULAR"))];
 				const titular = mainRecord.asegurado.trim();
@@ -97,16 +97,9 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 					policyNumber: mainRecord.noPoliza,
 					company: mainRecord.compania,
 					branch: mainRecord.ramo,
-					insuredValue: mainRecord.valorAsegurado,
-					premium: mainRecord.prima,
-					insuredMembers,
 					manualFields: {
 						premium: mainRecord.prima,
 						originalPremium: mainRecord.prima,
-						insuredValue: mainRecord.valorAsegurado,
-						originalInsuredValue: mainRecord.valorAsegurado,
-						insuredMatter: mainRecord.materiaAsegurada,
-						originalInsuredMatter: mainRecord.materiaAsegurada,
 						insuredMembers: [...insuredMembers],
 						originalInsuredMembers: [...insuredMembers],
 						deductiblesCurrency: "Bs.",
@@ -115,24 +108,33 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 				};
 			});
 		} else {
-			policies = groupRecords.map((record) => ({
-				expiryDate: formatDate(new Date(record.finDeVigencia)),
-				policyNumber: record.noPoliza,
-				company: record.compania,
-				branch: record.ramo,
-				insuredValue: record.valorAsegurado,
-				premium: record.prima,
-				manualFields: {
-					premium: record.prima,
-					originalPremium: record.prima,
-					insuredValue: record.valorAsegurado,
-					originalInsuredValue: record.valorAsegurado,
-					insuredMatter: record.materiaAsegurada,
-					originalInsuredMatter: record.materiaAsegurada,
-					deductiblesCurrency: "Bs.",
-					territorialityCurrency: "Bs.",
-				},
-			}));
+			policies = Object.values(policyGroups).map((policyGroup) => {
+				const mainRecord = policyGroup[0];
+				// LÓGICA MEJORADA PARA PRE-RELLENAR DATOS DEL VEHÍCULO
+				const vehicles: VehicleForLetter[] = policyGroup.map((r, i) => ({
+					id: `vehicle_${r.id || i}`,
+					description: r.materiaAsegurada || "Vehículo sin descripción",
+					declaredValue: 0, // Se deja en 0 para que el usuario lo rellene
+					insuredValue: r.valorAsegurado || 0, // Se pre-rellena desde el Excel
+				}));
+
+				const totalPremium = policyGroup.reduce((sum, r) => sum + (r.prima || 0), 0);
+
+				return {
+					expiryDate: formatDate(new Date(mainRecord.finDeVigencia)),
+					policyNumber: mainRecord.noPoliza,
+					company: mainRecord.compania,
+					branch: mainRecord.ramo,
+					manualFields: {
+						vehicles: vehicles,
+						originalVehicles: JSON.parse(JSON.stringify(vehicles)), // Deep copy
+						premium: totalPremium,
+						originalPremium: totalPremium,
+						deductiblesCurrency: "Bs.",
+						territorialityCurrency: "Bs.",
+					},
+				};
+			});
 		}
 
 		const letterDataBase = {
@@ -180,19 +182,22 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 				missing.push(`${policyLabel}: Prima de renovación anual`);
 			}
 		} else {
-			if (policy.manualFields?.insuredValue === undefined || policy.manualFields?.insuredValue === null || policy.manualFields.insuredValue <= 0) {
-				missing.push(`${policyLabel}: Valor Asegurado`);
-			}
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
 				missing.push(`${policyLabel}: Prima`);
 			}
-			if (!policy.manualFields?.insuredMatter) {
-				missing.push(`${policyLabel}: Materia Asegurada`);
+			if (!policy.manualFields?.vehicles || policy.manualFields.vehicles.length === 0) {
+				missing.push(`${policyLabel}: No se encontraron vehículos.`);
+			} else {
+				policy.manualFields.vehicles.forEach((vehicle, vIndex) => {
+					if (!vehicle.description) missing.push(`${policyLabel}, Vehículo ${vIndex + 1}: Falta descripción.`);
+					// AHORA SOLO VALIDAMOS VALOR DECLARADO, YA QUE EL ASEGURADO VIENE DEL EXCEL
+					if (!vehicle.declaredValue || vehicle.declaredValue <= 0) missing.push(`${policyLabel}, Vehículo ${vIndex + 1}: Falta valor declarado.`);
+				});
 			}
-			if (policy.manualFields?.deductibles === undefined || policy.manualFields?.deductibles === null || policy.manualFields.deductibles <= 0) {
+			if (policy.manualFields?.deductibles === undefined || policy.manualFields?.deductibles === null || policy.manualFields.deductibles < 0) {
 				missing.push(`${policyLabel}: Información de deducibles`);
 			}
-			if (policy.manualFields?.territoriality === undefined || policy.manualFields?.territoriality === null || policy.manualFields.territoriality <= 0) {
+			if (policy.manualFields?.territoriality === undefined || policy.manualFields?.territoriality === null || policy.manualFields.territoriality < 0) {
 				missing.push(`${policyLabel}: Información de extraterritorialidad`);
 			}
 			if (!policy.manualFields?.specificConditions) {
@@ -201,21 +206,15 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 		}
 	});
 
-	return missing;
+	return [...new Set(missing)]; // Evitar duplicados
 }
 
-/**
- * Genera número de referencia con un placeholder para entrada manual.
- */
 export function generateReferenceNumber(): string {
 	const now = new Date();
 	const year = now.getFullYear();
 	return `SCPSA-____/${year}`;
 }
 
-/**
- * Formatea fecha para mostrar en cartas
- */
 export function formatDate(date: Date): string {
 	return new Intl.DateTimeFormat("es-BO", {
 		year: "numeric",
@@ -224,9 +223,6 @@ export function formatDate(date: Date): string {
 	}).format(date);
 }
 
-/**
- * Formatea fecha corta para nombres de archivo
- */
 export function formatDateShort(date: Date): string {
 	return new Intl.DateTimeFormat("es-BO", {
 		year: "numeric",
@@ -237,9 +233,6 @@ export function formatDateShort(date: Date): string {
 		.replace(/\//g, "");
 }
 
-/**
- * Genera nombre de archivo para carta PDF
- */
 export function generateFileName(clientName: string, templateType: string): string {
 	const today = new Date();
 	const dateStr = formatDateShort(today);
@@ -255,9 +248,6 @@ export function generateFileName(clientName: string, templateType: string): stri
 	return `${dateStr}-AVISO_${typePrefix}_${cleanName}.pdf`;
 }
 
-/**
- * Valida si un registro tiene datos mínimos para generar carta
- */
 export function validateRecordForPDF(record: ProcessedInsuranceRecord): { valid: boolean; errors: string[] } {
 	const errors: string[] = [];
 	if (!record.asegurado || record.asegurado.trim().length < 2) {
@@ -284,9 +274,6 @@ export function validateRecordForPDF(record: ProcessedInsuranceRecord): { valid:
 	};
 }
 
-/**
- * Formatea moneda boliviana (Bs.)
- */
 export function formatCurrency(amount: number): string {
 	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 	return new Intl.NumberFormat("es-BO", {
@@ -297,9 +284,6 @@ export function formatCurrency(amount: number): string {
 	}).format(amount);
 }
 
-/**
- * Formatea moneda USD ($us.)
- */
 export function formatUSD(amount: number): string {
 	if (amount === undefined || amount === null || isNaN(amount)) return "No especificado";
 	const formattedNumber = new Intl.NumberFormat("es-BO", {
