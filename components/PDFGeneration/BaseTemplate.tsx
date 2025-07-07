@@ -57,16 +57,16 @@ const styles = StyleSheet.create({
 	subject: {
 		fontSize: 11,
 		fontWeight: "bold",
-		marginBottom: 15,
+		marginBottom: 10,
 		textAlign: "left",
 		textDecoration: "underline",
 	},
 	greeting: {
-		marginBottom: 15,
+		marginBottom: 10,
 		fontSize: 10,
 	},
 	content: {
-		marginBottom: 5,
+		marginBottom: 1,
 	},
 	paragraph: {
 		marginBottom: 10,
@@ -110,7 +110,6 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	additionalConditions: {
-		marginTop: 10,
 		marginBottom: 10,
 		fontSize: 9,
 		textAlign: "justify",
@@ -176,7 +175,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 
 				<View style={styles.content}>
 					<Text style={styles.paragraph}>
-						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la {letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de
+						Por medio de la presente, nos permitimos recordarle que se aproxima el vencimiento de la{letterData.policies.length > 1 ? "s" : ""} Póliza{letterData.policies.length > 1 ? "s" : ""} de
 						Seguro cuyos detalles se especifican a continuación:
 					</Text>
 

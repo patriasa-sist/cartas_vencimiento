@@ -43,7 +43,6 @@ const generalStyles = StyleSheet.create({
 	detailsBox: {
 		backgroundColor: "#f8f9fa",
 		padding: 8,
-		marginBottom: 10,
 		borderWidth: 1,
 		borderColor: "#dee2e6",
 		borderRadius: 4,

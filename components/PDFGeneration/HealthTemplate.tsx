@@ -52,13 +52,13 @@ const healthStyles = StyleSheet.create({
 		borderColor: "#dee2e6",
 	},
 	aseguradosTitle: {
-		fontSize: 9,
+		fontSize: 10,
 		fontWeight: "bold",
 		marginBottom: 5,
 		color: "#172554",
 	},
 	aseguradoName: {
-		fontSize: 8,
+		fontSize: 9,
 		marginBottom: 2,
 	},
 });

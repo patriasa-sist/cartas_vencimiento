@@ -5,7 +5,8 @@ import { LetterData, PolicyForLetter, VehicleForLetter } from "@/types/pdf";
 
 // Constantes para los textos de plantilla
 const HEALTH_CONDITIONS_TEMPLATE = `Le informamos que a partir del *01/05/2025*, se excluye la cobertura del certificado asistencia al viajero y las pólizas se emiten en moneda nacional (BS)`;
-const GENERAL_CONDITIONS_TEMPLATE = `A partir del *01/12/2024* se aplica :\n-Deducible coaseguro: 10% del valor del siniestro mínimo Bs 1.000 aplicable para las coberturas de Daños Propios, Conmoción Civil, Huelgas, Daño Malicioso, Sabotaje, Vandalismo y Terrorismo.\n-Extraterritorialidad: PAGO DE EXTRA PRIMA DE BS 400 (CONTADO) SI ES SOLICITADO EN LA RENOVACION DE LA POLIZA, POSTERIOR A LA RENOVACION DE LA POLIZA, EXTRA PRIMA DE BS 500.-\n“ La suscripción de los seguros seguro es Bs y considerando que en los últimos meses se ha observado un incremento significativo en el valor de mercado de los bienes en general en nuestro país, solicitamos la revisión del valor asegurado de su vehículo. La finalidad de esta actualización es garantizar una protección correcta de su patrimonio y acorde al valor real actual de los bien asegurado, con el fin de evitar la aplicación de infraseguro en caso de siniestro, como se encuentra establecido en el Código de Comercio, Art.1056.”`;
+const AUTOMOTOR_CONDITIONS_TEMPLATE = `A partir del *01/12/2024* se aplica :\n-Deducible coaseguro: 10% del valor del siniestro mínimo Bs 1.000 aplicable para las coberturas de Daños Propios, Conmoción Civil, Huelgas, Daño Malicioso, Sabotaje, Vandalismo y Terrorismo.\n-Extraterritorialidad: PAGO DE EXTRA PRIMA DE BS 400 (CONTADO) SI ES SOLICITADO EN LA RENOVACION DE LA POLIZA, POSTERIOR A LA RENOVACION DE LA POLIZA, EXTRA PRIMA DE BS 500.-\n“ La suscripción de los seguros seguro es Bs y considerando que en los últimos meses se ha observado un incremento significativo en el valor de mercado de los bienes en general en nuestro país, solicitamos la revisión del valor asegurado de su vehículo. La finalidad de esta actualización es garantizar una protección correcta de su patrimonio y acorde al valor real actual de los bien asegurado, con el fin de evitar la aplicación de infraseguro en caso de siniestro, como se encuentra establecido en el Código de Comercio, Art.1056.”`;
+const GENERAL_CONDITIONS_TEMPLATE = ``;
 
 export const PDF_CONSTANTS = {
 	TEMPLATES: {
@@ -159,7 +160,16 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			},
 			policies,
 			executive: firstRecord.ejecutivo,
-			additionalConditions: templateType === "salud" ? HEALTH_CONDITIONS_TEMPLATE : GENERAL_CONDITIONS_TEMPLATE,
+			additionalConditions: (() => {
+				switch (templateType) {
+					case "salud":
+						return HEALTH_CONDITIONS_TEMPLATE;
+					case "automotor":
+						return AUTOMOTOR_CONDITIONS_TEMPLATE;
+					default:
+						return GENERAL_CONDITIONS_TEMPLATE;
+				}
+			})(),
 		};
 
 		const missingData = detectMissingData(letterDataBase);
