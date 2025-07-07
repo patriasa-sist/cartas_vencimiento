@@ -135,7 +135,7 @@ export const AutomotorTemplate: React.FC<AutomotorTemplateProps> = ({ letterData
 						<Text style={automotorStyles.headerText}>RAMO</Text>
 					</View>
 					<View style={[automotorStyles.tableCol, { width: "20%" }]}>
-						<Text style={automotorStyles.headerText}>PRIMA TOTAL</Text>
+						<Text style={automotorStyles.headerText}>VALOR ASEGURADO</Text>
 					</View>
 				</View>
 

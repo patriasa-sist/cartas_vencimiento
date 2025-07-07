@@ -912,7 +912,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 													</div>
 													<div className="space-y-2">
 														<NumericInputWithCurrency
-															label="Prima Total:"
+															label="Valor Asegurado:"
 															value={policy.manualFields?.premium}
 															currency={policy.manualFields?.premiumCurrency || "Bs."}
 															onValueChange={(v) => updatePolicy(index, "premium", v)}
@@ -961,7 +961,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 													</div>
 													<div className="space-y-2">
 														<NumericInputWithCurrency
-															label="Prima Total:"
+															label="Valor Asegurado:"
 															value={policy.manualFields?.premium}
 															currency={policy.manualFields?.premiumCurrency || "Bs."}
 															onValueChange={(v) => updatePolicy(index, "premium", v)}
@@ -1001,7 +1001,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 											) : letter.templateType === "automotor" ? (
 												<>
 													{policy.manualFields?.premium !== undefined && (
-														<div className="text-green-700 font-medium">✓ Prima Total: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
+														<div className="text-green-700 font-medium">✓ Valor Asegurado: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
 													)}
 													<div className="text-green-700 font-medium">✓ Vehículos:</div>
 													<ul className="list-disc list-inside pl-2">
@@ -1025,7 +1025,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 												// General Template
 												<>
 													{policy.manualFields?.premium !== undefined && (
-														<div className="text-green-700 font-medium">✓ Prima Total: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
+														<div className="text-green-700 font-medium">✓ Valor Asegurado: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
 													)}
 													{policy.manualFields?.insuredMatter && <div className="text-green-700 font-medium">✓ Materia Asegurada: {policy.manualFields.insuredMatter}</div>}
 													{policy.manualFields?.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}

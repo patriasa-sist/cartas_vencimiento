@@ -201,7 +201,7 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 			}
 		} else if (letterData.templateType === "automotor") {
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
-				missing.push(`${policyLabel}: Prima Total`);
+				missing.push(`${policyLabel}: Valor Asegurado`);
 			}
 			if (!policy.manualFields?.vehicles || policy.manualFields.vehicles.length === 0) {
 				missing.push(`${policyLabel}: No se encontraron vehículos.`);
@@ -214,7 +214,7 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 		} else {
 			// General
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
-				missing.push(`${policyLabel}: Prima Total`);
+				missing.push(`${policyLabel}: Valor Asegurado`);
 			}
 			if (!policy.manualFields?.insuredMatter) {
 				missing.push(`${policyLabel}: Materia Asegurada`);
