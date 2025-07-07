@@ -198,7 +198,7 @@ export const BaseTemplate: React.FC<BaseTemplateProps> = ({ letterData, children
 					)}
 
 					<Text style={styles.paragraph}>
-						Es importante informarle que {letterData.templateType !== "salud" ? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas," : " la"} NO RENOVACION,
+						Es importante informarle que {letterData.templateType !== "salud" ? ", en caso de tener primas pendientes no se podrá renovar hasta su regularización de estas, la" : "la"} NO RENOVACION,
 						suspende toda cobertura de la póliza de seguro.
 					</Text>
 
