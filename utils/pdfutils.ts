@@ -11,6 +11,7 @@ export const PDF_CONSTANTS = {
 	TEMPLATES: {
 		SALUD: "salud",
 		GENERAL: "general",
+		AUTOMOTOR: "automotor",
 	},
 	PAGE_SIZE: "letter" as const,
 	MARGINS: {
@@ -42,11 +43,15 @@ export const PDF_CONSTANTS = {
 /**
  * Determina qué template usar basado en el RAMO
  */
-export function determineTemplateType(ramo: string): "salud" | "general" {
+export function determineTemplateType(ramo: string): "salud" | "automotor" | "general" {
 	const ramoLower = ramo.toLowerCase();
 	const saludKeywords = ["salud", "vida", "medic", "asistencia medica"];
 	if (saludKeywords.some((keyword) => ramoLower.includes(keyword))) {
 		return "salud";
+	}
+	const automotorKeywords = ["automotor", "aut"];
+	if (automotorKeywords.some((keyword) => ramoLower.includes(keyword))) {
+		return "automotor";
 	}
 	return "general";
 }
@@ -81,9 +86,25 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 			policyGroups[policyKey].push(record);
 		});
 
-		if (templateType === "salud") {
-			policies = Object.values(policyGroups).map((policyGroup) => {
-				const mainRecord = policyGroup.find((r) => !r.materiaAsegurada || r.materiaAsegurada.trim().toUpperCase() === r.asegurado.trim().toUpperCase()) || policyGroup[0];
+		Object.values(policyGroups).forEach((policyGroup) => {
+			const mainRecord = policyGroup[0];
+			const totalPremium = policyGroup.reduce((sum, r) => sum + (r.prima || 0), 0);
+			const basePolicy: Omit<PolicyForLetter, "manualFields"> = {
+				expiryDate: formatDate(new Date(mainRecord.finDeVigencia)),
+				policyNumber: mainRecord.noPoliza,
+				company: mainRecord.compania,
+				branch: mainRecord.ramo,
+			};
+
+			let manualFields: PolicyForLetter["manualFields"] = {
+				originalPremium: totalPremium,
+				premium: totalPremium,
+				premiumCurrency: "Bs.",
+				deductiblesCurrency: "Bs.",
+				territorialityCurrency: "Bs.",
+			};
+
+			if (templateType === "salud") {
 				const insuredMembers = [...new Set(policyGroup.map((r) => r.materiaAsegurada?.trim()).filter((name): name is string => !!name && name.toUpperCase() !== "TITULAR"))];
 				const titular = mainRecord.asegurado.trim();
 				const titularIndex = insuredMembers.findIndex((m) => m.toUpperCase() === titular.toUpperCase());
@@ -91,53 +112,38 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 					insuredMembers.splice(titularIndex, 1);
 				}
 				insuredMembers.unshift(titular);
-
-				return {
-					expiryDate: formatDate(new Date(mainRecord.finDeVigencia)),
-					policyNumber: mainRecord.noPoliza,
-					company: mainRecord.compania,
-					branch: mainRecord.ramo,
-					manualFields: {
-						premium: mainRecord.prima,
-						originalPremium: mainRecord.prima,
-						insuredMembers: [...insuredMembers],
-						originalInsuredMembers: [...insuredMembers],
-						renewalPremiumCurrency: "$us.", // Moneda por defecto para salud
-						deductiblesCurrency: "Bs.",
-						territorialityCurrency: "Bs.",
-					},
+				manualFields = {
+					...manualFields,
+					insuredMembers: [...insuredMembers],
+					originalInsuredMembers: [...insuredMembers],
+					renewalPremiumCurrency: "$us.",
 				};
-			});
-		} else {
-			policies = Object.values(policyGroups).map((policyGroup) => {
-				const mainRecord = policyGroup[0];
-				// LÓGICA MEJORADA PARA PRE-RELLENAR DATOS DEL VEHÍCULO
+			} else if (templateType === "automotor") {
 				const vehicles: VehicleForLetter[] = policyGroup.map((r, i) => ({
 					id: `vehicle_${r.id || i}`,
 					description: r.materiaAsegurada || "Vehículo sin descripción",
-					declaredValue: 0, // Se deja en 0 para que el usuario lo rellene
-					insuredValue: r.valorAsegurado || 0, // Se pre-rellena desde el Excel
+					declaredValue: 0,
+					insuredValue: r.valorAsegurado || 0,
 				}));
-
-				const totalPremium = policyGroup.reduce((sum, r) => sum + (r.prima || 0), 0);
-
-				return {
-					expiryDate: formatDate(new Date(mainRecord.finDeVigencia)),
-					policyNumber: mainRecord.noPoliza,
-					company: mainRecord.compania,
-					branch: mainRecord.ramo,
-					manualFields: {
-						vehicles: vehicles,
-						originalVehicles: JSON.parse(JSON.stringify(vehicles)), // Deep copy
-						premium: totalPremium,
-						originalPremium: totalPremium,
-						premiumCurrency: "Bs.", // Moneda por defecto para generales
-						deductiblesCurrency: "Bs.",
-						territorialityCurrency: "Bs.",
-					},
+				manualFields = {
+					...manualFields,
+					vehicles: vehicles,
+					originalVehicles: JSON.parse(JSON.stringify(vehicles)),
 				};
-			});
-		}
+			} else {
+				// 'general'
+				const insuredMatter = policyGroup
+					.map((r) => r.materiaAsegurada)
+					.filter(Boolean)
+					.join(", ");
+				manualFields = {
+					...manualFields,
+					insuredMatter: insuredMatter,
+					originalInsuredMatter: insuredMatter,
+				};
+			}
+			policies.push({ ...basePolicy, manualFields });
+		});
 
 		const letterDataBase = {
 			id: `letter_${Date.now()}_${index}`,
@@ -160,7 +166,7 @@ export function groupRecordsForLetters(records: ProcessedInsuranceRecord[]): Let
 
 		return {
 			...letterDataBase,
-			needsReview: missingData.length > 0 || templateType === "general",
+			needsReview: missingData.length > 0 || templateType === "automotor" || templateType === "general",
 			missingData,
 		};
 	});
@@ -181,17 +187,11 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 
 		if (letterData.templateType === "salud") {
 			if (!policy.manualFields?.renewalPremium || policy.manualFields.renewalPremium <= 0) {
-				missing.push(`${policyLabel}: Prima de renovación anual`);
+				missing.push(`${policyLabel}: Prima de renovación`);
 			}
-			if (!policy.manualFields?.renewalPremiumCurrency) {
-				missing.push(`${policyLabel}: Moneda de la prima de renovación`);
-			}
-		} else {
+		} else if (letterData.templateType === "automotor") {
 			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
 				missing.push(`${policyLabel}: Prima Total`);
-			}
-			if (!policy.manualFields?.premiumCurrency) {
-				missing.push(`${policyLabel}: Moneda de la Prima Total`);
 			}
 			if (!policy.manualFields?.vehicles || policy.manualFields.vehicles.length === 0) {
 				missing.push(`${policyLabel}: No se encontraron vehículos.`);
@@ -201,14 +201,13 @@ export function detectMissingData(letterData: Omit<LetterData, "needsReview" | "
 					if (!vehicle.declaredValue || vehicle.declaredValue <= 0) missing.push(`${policyLabel}, Vehículo ${vIndex + 1}: Falta valor declarado.`);
 				});
 			}
-			if (policy.manualFields?.deductibles === undefined || policy.manualFields?.deductibles === null || policy.manualFields.deductibles < 0) {
-				missing.push(`${policyLabel}: Información de deducibles`);
+		} else {
+			// General
+			if (!policy.manualFields?.premium || policy.manualFields.premium <= 0) {
+				missing.push(`${policyLabel}: Prima Total`);
 			}
-			if (policy.manualFields?.territoriality === undefined || policy.manualFields?.territoriality === null || policy.manualFields.territoriality < 0) {
-				missing.push(`${policyLabel}: Información de extraterritorialidad`);
-			}
-			if (!policy.manualFields?.specificConditions) {
-				missing.push(`${policyLabel}: Condiciones específicas`);
+			if (!policy.manualFields?.insuredMatter) {
+				missing.push(`${policyLabel}: Materia Asegurada`);
 			}
 		}
 	});
@@ -240,7 +239,7 @@ export function formatDateShort(date: Date): string {
 		.replace(/\//g, "");
 }
 
-export function generateFileName(clientName: string, templateType: string): string {
+export function generateFileName(clientName: string, templateType: "salud" | "general" | "automotor"): string {
 	const today = new Date();
 	const dateStr = formatDateShort(today);
 
@@ -250,7 +249,12 @@ export function generateFileName(clientName: string, templateType: string): stri
 		.replace(/\s+/g, "_")
 		.toUpperCase();
 
-	const typePrefix = templateType === "salud" ? "SALUD" : "VCMTO";
+	const typePrefixMap = {
+		salud: "SALUD",
+		automotor: "AUTO",
+		general: "GEN",
+	};
+	const typePrefix = typePrefixMap[templateType] || "VCMTO";
 
 	return `${dateStr}-AVISO_${typePrefix}_${cleanName}.pdf`;
 }

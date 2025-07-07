@@ -3,7 +3,6 @@ import React from "react";
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { BaseTemplate } from "./BaseTemplate";
 import { LetterData } from "@/types/pdf";
-import { formatUSD } from "@/utils/pdfutils";
 
 const generalStyles = StyleSheet.create({
 	policyTable: {
@@ -60,41 +59,10 @@ const generalStyles = StyleSheet.create({
 		marginBottom: 5,
 		lineHeight: 1.3,
 	},
-	// NUEVOS ESTILOS PARA LA SUB-TABLA DE VEHÍCULOS
-	subTable: {
-		width: "100%",
-		borderStyle: "solid",
-		borderWidth: 1,
-		borderColor: "#dee2e6",
-		marginTop: 5,
-		marginBottom: 10,
-	},
-	subTableHeader: {
-		flexDirection: "row",
-		backgroundColor: "#e9ecef",
-	},
-	subTableColHeader: {
-		borderStyle: "solid",
-		borderBottomWidth: 1,
-		borderColor: "#dee2e6",
-		padding: 4,
-		textAlign: "center",
-	},
-	subHeaderText: {
+	insuredMatterText: {
+		fontSize: 9,
 		fontWeight: "bold",
-		fontSize: 7,
-		color: "#1f2937",
-	},
-	subTableRow: {
-		flexDirection: "row",
-	},
-	subTableCell: {
-		padding: 4,
-		fontSize: 7,
-		borderRightWidth: 1,
-		borderRightColor: "#e5e7eb",
-		borderBottomWidth: 1,
-		borderBottomColor: "#e5e7eb",
+		marginBottom: 5,
 	},
 });
 
@@ -119,88 +87,49 @@ export const GeneralTemplate: React.FC<GeneralTemplateProps> = ({ letterData }) 
 
 	return (
 		<BaseTemplate letterData={letterData}>
-			{/* Tabla principal de pólizas */}
-			<View style={generalStyles.policyTable}>
-				<View style={generalStyles.tableRow}>
-					<View style={[generalStyles.tableCol, { width: "15%" }]}>
-						<Text style={generalStyles.headerText}>VENCIMIENTO</Text>
-					</View>
-					<View style={[generalStyles.tableCol, { width: "25%" }]}>
-						<Text style={generalStyles.headerText}>No. DE PÓLIZA</Text>
-					</View>
-					<View style={[generalStyles.tableCol, { width: "20%" }]}>
-						<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
-					</View>
-					<View style={[generalStyles.tableCol, { width: "20%" }]}>
-						<Text style={generalStyles.headerText}>RAMO</Text>
-					</View>
-					<View style={[generalStyles.tableCol, { width: "20%" }]}>
-						<Text style={generalStyles.headerText}>PRIMA TOTAL</Text>
-					</View>
-				</View>
-
-				{letterData.policies.map((policy, index) => (
-					<View key={index} style={generalStyles.tableRow}>
-						<View style={[generalStyles.tableCol, { width: "15%" }]}>
-							<Text style={generalStyles.cellText}>{policy.expiryDate}</Text>
-						</View>
-						<View style={[generalStyles.tableCol, { width: "25%" }]}>
-							<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text>
-						</View>
-						<View style={[generalStyles.tableCol, { width: "20%" }]}>
-							<Text style={generalStyles.cellText}>{policy.company}</Text>
-						</View>
-						<View style={[generalStyles.tableCol, { width: "20%" }]}>
-							<Text style={generalStyles.cellText}>{policy.branch}</Text>
-						</View>
-						<View style={[generalStyles.tableCol, { width: "20%" }]}>
-							<Text style={generalStyles.cellText}>{formatMonetaryValue(policy.manualFields?.premium, policy.manualFields?.premiumCurrency)}</Text>
-						</View>
-					</View>
-				))}
-			</View>
-
-			{/* Sección de detalles por póliza */}
 			{letterData.policies.map((policy, policyIndex) => (
-				<View key={policyIndex} style={generalStyles.detailsBox}>
-					<Text style={generalStyles.detailsTitle}>DETALLE DE LA PÓLIZA: {policy.policyNumber}</Text>
-
-					{policy.manualFields?.vehicles && policy.manualFields.vehicles.length > 0 && (
-						<View style={generalStyles.subTable}>
-							<View style={generalStyles.subTableHeader}>
-								<View style={[generalStyles.subTableColHeader, { width: "50%" }]}>
-									<Text style={generalStyles.subHeaderText}>DETALLE DE VEHÍCULO</Text>
-								</View>
-								<View style={[generalStyles.subTableColHeader, { width: "25%" }]}>
-									<Text style={generalStyles.subHeaderText}>VALOR DECLARADO</Text>
-								</View>
-								<View style={[generalStyles.subTableColHeader, { width: "25%", borderRightWidth: 0 }]}>
-									<Text style={generalStyles.subHeaderText}>VALOR ASEGURADO</Text>
-								</View>
+				<View key={policyIndex} style={{ marginBottom: 15 }}>
+					{/* Tabla de Póliza */}
+					<View style={generalStyles.policyTable}>
+						{/* Fila de Cabecera */}
+						<View style={generalStyles.tableRow}>
+							<View style={[generalStyles.tableCol, { width: "20%" }]}>
+								<Text style={generalStyles.headerText}>VENCIMIENTO</Text>
 							</View>
-							{policy.manualFields.vehicles.map((vehicle, vIndex) => (
-								<View key={vIndex} style={generalStyles.subTableRow}>
-									<View style={[generalStyles.subTableCell, { width: "50%", textAlign: "left" }]}>
-										<Text>{vehicle.description}</Text>
-									</View>
-									<View style={[generalStyles.subTableCell, { width: "25%" }]}>
-										<Text>{formatUSD(vehicle.declaredValue)}</Text>
-									</View>
-									<View style={[generalStyles.subTableCell, { width: "25%", borderRightWidth: 0 }]}>
-										<Text>{formatUSD(vehicle.insuredValue)}</Text>
-									</View>
-								</View>
-							))}
+							<View style={[generalStyles.tableCol, { width: "25%" }]}>
+								<Text style={generalStyles.headerText}>No. DE PÓLIZA</Text>
+							</View>
+							<View style={[generalStyles.tableCol, { width: "25%" }]}>
+								<Text style={generalStyles.headerText}>COMPAÑÍA</Text>
+							</View>
+							<View style={[generalStyles.tableCol, { width: "30%" }]}>
+								<Text style={generalStyles.headerText}>RAMO</Text>
+							</View>
 						</View>
-					)}
+						{/* Fila de Datos */}
+						<View style={generalStyles.tableRow}>
+							<View style={[generalStyles.tableCol, { width: "20%" }]}>
+								<Text style={generalStyles.cellText}>{policy.expiryDate}</Text>
+							</View>
+							<View style={[generalStyles.tableCol, { width: "25%" }]}>
+								<Text style={generalStyles.policyNumberCellText}>{policy.policyNumber}</Text>
+							</View>
+							<View style={[generalStyles.tableCol, { width: "25%" }]}>
+								<Text style={generalStyles.cellText}>{policy.company}</Text>
+							</View>
+							<View style={[generalStyles.tableCol, { width: "30%" }]}>
+								<Text style={generalStyles.cellText}>{policy.branch}</Text>
+							</View>
+						</View>
+					</View>
 
-					{policy.manualFields?.deductibles !== undefined && (
-						<Text style={generalStyles.detailText}>• Deducible coaseguro: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</Text>
-					)}
-					{policy.manualFields?.territoriality !== undefined && (
-						<Text style={generalStyles.detailText}>• Extraterritorialidad (opcional): {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}</Text>
-					)}
-					{policy.manualFields?.specificConditions && <Text style={generalStyles.detailText}>• Condiciones Específicas: {policy.manualFields.specificConditions}</Text>}
+					{/* Caja de Detalles */}
+					<View style={generalStyles.detailsBox}>
+						<Text style={generalStyles.detailsTitle}>DETALLE DE LA PÓLIZA</Text>
+						{policy.manualFields?.insuredMatter && <Text style={generalStyles.insuredMatterText}>• Materia Asegurada: {policy.manualFields.insuredMatter}</Text>}
+						<Text style={generalStyles.detailText}>• Prima Total: {formatMonetaryValue(policy.manualFields?.premium, policy.manualFields?.premiumCurrency)}</Text>
+						{policy.manualFields?.specificConditions && <Text style={generalStyles.detailText}>• Condiciones Específicas: {policy.manualFields.specificConditions}</Text>}
+					</View>
 				</View>
 			))}
 		</BaseTemplate>

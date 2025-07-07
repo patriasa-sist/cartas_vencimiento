@@ -16,7 +16,8 @@ import { groupRecordsForLetters, validateRecordForPDF, generateFileName, formatU
 import { cleanPhoneNumber, createWhatsAppMessage } from "@/utils/whatsapp";
 import { pdf } from "@react-pdf/renderer";
 import { HealthTemplate } from "./HealthTemplate";
-import { GeneralTemplate } from "./GeneralTemplate";
+import { AutomotorTemplate } from "./AutomotorTemplate"; // Cambiado
+import { GeneralTemplate } from "./GeneralTemplate"; // Nuevo
 import JSZip from "jszip";
 
 // Icono de WhatsApp como componente SVG
@@ -32,7 +33,7 @@ interface LetterGeneratorProps {
 	onGenerated?: (result: PDFGenerationResult) => void;
 }
 
-// Componente para input numérico validado (MEJORADO)
+// Componente para input numérico validado
 interface NumericInputProps {
 	value: number | string;
 	onChange: (value: number) => void;
@@ -42,7 +43,7 @@ interface NumericInputProps {
 }
 
 function NumericInput({ value, onChange, placeholder, className, label }: NumericInputProps) {
-	// Si el valor inicial es 0, se muestra como vacío para incitar al usuario a rellenarlo.
+	// ... (sin cambios en este componente)
 	const [displayValue, setDisplayValue] = useState(value ? String(value) : "");
 
 	useEffect(() => {
@@ -94,6 +95,7 @@ interface NumericInputWithCurrencyProps {
 }
 
 function NumericInputWithCurrency({ value, currency, onValueChange, onCurrencyChange, label, placeholder, className }: NumericInputWithCurrencyProps) {
+	// ... (sin cambios en este componente)
 	const [displayValue, setDisplayValue] = useState(value !== undefined && value !== null ? String(value) : "");
 
 	useEffect(() => {
@@ -154,6 +156,7 @@ interface ConditionsTextareaProps {
 }
 
 function ConditionsTextarea({ value, onChange, placeholder, label, rows = 3 }: ConditionsTextareaProps) {
+	// ... (sin cambios en este componente)
 	return (
 		<div>
 			{label && <label className="text-xs text-gray-600 block mb-1">{label}</label>}
@@ -176,6 +179,7 @@ interface InsuredMembersEditorProps {
 }
 
 function InsuredMembersEditor({ members, onChange, label }: InsuredMembersEditorProps) {
+	// ... (sin cambios en este componente)
 	const handleMemberChange = (index: number, value: string) => {
 		const newMembers = [...members];
 		newMembers[index] = value;
@@ -212,7 +216,7 @@ function InsuredMembersEditor({ members, onChange, label }: InsuredMembersEditor
 	);
 }
 
-// NUEVO: Componente para editar la lista de vehículos
+// Componente para editar la lista de vehículos (Automotor)
 interface VehicleEditorProps {
 	vehicles: VehicleForLetter[];
 	onChange: (newVehicles: VehicleForLetter[]) => void;
@@ -220,6 +224,7 @@ interface VehicleEditorProps {
 }
 
 function VehicleEditor({ vehicles, onChange, label }: VehicleEditorProps) {
+	// ... (sin cambios en este componente)
 	const handleVehicleChange = (index: number, field: keyof Omit<VehicleForLetter, "id">, value: string | number) => {
 		const newVehicles = vehicles.map((v, i) => (i === index ? { ...v, [field]: value } : v));
 		onChange(newVehicles);
@@ -283,6 +288,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	const [generationResult, setGenerationResult] = useState<PDFGenerationResult | null>(null);
 
 	const preparedLetters = useMemo(() => {
+		// ... (sin cambios en esta sección)
 		const validRecords: ProcessedInsuranceRecord[] = [];
 		const validationErrors: string[] = [];
 
@@ -312,6 +318,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 	const stats = useMemo(() => {
 		const saludCount = letters.filter((l) => l.templateType === "salud").length;
+		const automotorCount = letters.filter((l) => l.templateType === "automotor").length;
 		const generalCount = letters.filter((l) => l.templateType === "general").length;
 		const needReviewCount = letters.filter((l) => l.needsReview).length;
 		const totalPolicies = letters.reduce((sum, l) => sum + l.policies.length, 0);
@@ -319,6 +326,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 		return {
 			totalLetters: letters.length,
 			saludCount,
+			automotorCount,
 			generalCount,
 			needReviewCount,
 			totalPolicies,
@@ -326,13 +334,14 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	}, [letters]);
 
 	const updateLetterData = (letterId: string, updates: Partial<LetterData>) => {
+		// ... (sin cambios en esta función)
 		setLetters((prev) => {
 			const updated = prev.map((letter) => {
 				if (letter.id === letterId) {
 					const updatedLetter = { ...letter, ...updates };
 					const missingData = detectMissingData(updatedLetter);
 					updatedLetter.missingData = missingData;
-					updatedLetter.needsReview = missingData.length > 0 || updatedLetter.templateType === "general";
+					updatedLetter.needsReview = missingData.length > 0 || updatedLetter.templateType === "general" || updatedLetter.templateType === "automotor";
 					return updatedLetter;
 				}
 				return letter;
@@ -342,11 +351,22 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 	};
 
 	const generateSinglePDF = async (letterData: LetterData): Promise<Blob> => {
-		const TemplateComponent = letterData.templateType === "salud" ? HealthTemplate : GeneralTemplate;
+		let TemplateComponent;
+		switch (letterData.templateType) {
+			case "salud":
+				TemplateComponent = HealthTemplate;
+				break;
+			case "automotor":
+				TemplateComponent = AutomotorTemplate;
+				break;
+			default:
+				TemplateComponent = GeneralTemplate;
+		}
 		const pdfBlob = await pdf(<TemplateComponent letterData={letterData} />).toBlob();
 		return pdfBlob;
 	};
 
+	// ... (sin cambios en handlePreview, downloadBlob, handleDownloadSingle, handleDownloadAll, handleSendWhatsApp)
 	const handlePreview = async (letterId: string) => {
 		setPreviewLetter(letterId);
 		const letter = letters.find((l) => l.id === letterId);
@@ -523,6 +543,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 
 	return (
 		<div className="space-y-6">
+			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
 					<h2 className="text-2xl font-bold text-gray-900 flex items-center">
@@ -553,21 +574,24 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						<div className="text-sm text-gray-600">Total Cartas</div>
 					</CardContent>
 				</Card>
-
 				<Card>
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-patria-green">{stats.saludCount}</div>
 						<div className="text-sm text-gray-600">Salud</div>
 					</CardContent>
 				</Card>
-
 				<Card>
 					<CardContent className="p-4 text-center">
-						<div className="text-2xl font-bold text-blue-600">{stats.generalCount}</div>
+						<div className="text-2xl font-bold text-blue-600">{stats.automotorCount}</div>
+						<div className="text-sm text-gray-600">Automotor</div>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="p-4 text-center">
+						<div className="text-2xl font-bold text-gray-600">{stats.generalCount}</div>
 						<div className="text-sm text-gray-600">General</div>
 					</CardContent>
 				</Card>
-
 				<Card>
 					<CardContent className="p-4 text-center">
 						<div className="text-2xl font-bold text-red-600">{stats.needReviewCount}</div>
@@ -576,6 +600,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				</Card>
 			</div>
 
+			{/* Validation Errors */}
 			{preparedLetters.validationErrors.length > 0 && (
 				<Alert className="border-yellow-200 bg-yellow-50">
 					<AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -600,9 +625,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 						isPreviewing={previewLetter === letter.id}
 						isGenerating={isGenerating}
 						onEdit={() => setEditingLetter(letter.id)}
-						onSaveEdit={() => {
-							setEditingLetter(null);
-						}}
+						onSaveEdit={() => setEditingLetter(null)}
 						onCancelEdit={() => setEditingLetter(null)}
 						onPreview={() => handlePreview(letter.id)}
 						onDownload={() => handleDownloadSingle(letter.id)}
@@ -612,6 +635,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 				))}
 			</div>
 
+			{/* Generation Result */}
 			{generationResult && (
 				<Card className={generationResult.errors.length > 0 ? "border-yellow-200 bg-yellow-50" : "border-green-200 bg-green-50"}>
 					<CardContent className="p-4">
@@ -695,10 +719,20 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 		handleFieldChange("policies", updatedPolicies);
 	};
 
-	const getTemplateIcon = (type: "salud" | "general") => (type === "salud" ? "🏥" : "🚗");
-	const getTemplateColor = (type: "salud" | "general") => (type === "salud" ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50");
+	const getTemplateIcon = (type: "salud" | "general" | "automotor") => {
+		if (type === "salud") return "🏥";
+		if (type === "automotor") return "🚗";
+		return "📄";
+	};
+
+	const getTemplateColor = (type: "salud" | "general" | "automotor") => {
+		if (type === "salud") return "border-green-200 bg-green-50";
+		if (type === "automotor") return "border-blue-200 bg-blue-50";
+		return "border-gray-200 bg-gray-50";
+	};
 
 	const formatMonetaryValue = (value: number | undefined, currency: "Bs." | "$us." | undefined) => {
+		// ... (sin cambios)
 		if (value === undefined || value === null || isNaN(value)) return "No especificado";
 		const formattedValue = new Intl.NumberFormat("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 		return currency === "$us." ? `$us. ${formattedValue}` : `Bs. ${formattedValue}`;
@@ -818,6 +852,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 					</div>
 				)}
 
+				{/* Policies */}
 				<div className="space-y-3">
 					<h4 className="font-medium text-gray-900">Pólizas ({letter.policies.length})</h4>
 					{editedLetter.policies.map((policy, index) => (
@@ -831,7 +866,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 								</div>
 								<div>
 									<div className="text-gray-600">Prima Original: {formatMonetaryValue(policy.manualFields?.originalPremium, "Bs.")}</div>
-									{letter.templateType === "general" && (
+									{letter.templateType === "automotor" && (
 										<div className="mt-1">
 											<div className="text-gray-600">Vehículos Originales:</div>
 											<ul className="list-disc list-inside pl-2 italic text-gray-500">
@@ -866,7 +901,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														/>
 													</div>
 												</>
-											) : (
+											) : letter.templateType === "automotor" ? (
 												<>
 													<div className="space-y-2">
 														<VehicleEditor
@@ -912,6 +947,37 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														/>
 													</div>
 												</>
+											) : (
+												// General Template
+												<>
+													<div className="space-y-2">
+														<ConditionsTextarea
+															label="Materia Asegurada (editable):"
+															value={policy.manualFields?.insuredMatter || ""}
+															onChange={(v) => updatePolicy(index, "insuredMatter", v)}
+															placeholder="Detalle la materia asegurada..."
+															rows={2}
+														/>
+													</div>
+													<div className="space-y-2">
+														<NumericInputWithCurrency
+															label="Prima Total:"
+															value={policy.manualFields?.premium}
+															currency={policy.manualFields?.premiumCurrency || "Bs."}
+															onValueChange={(v) => updatePolicy(index, "premium", v)}
+															onCurrencyChange={(c) => updatePolicy(index, "premiumCurrency", c)}
+															placeholder="0.00"
+															className="text-xs h-8"
+														/>
+														<ConditionsTextarea
+															label="Condiciones específicas:"
+															value={policy.manualFields?.specificConditions || ""}
+															onChange={(v) => updatePolicy(index, "specificConditions", v)}
+															placeholder="Condiciones adicionales..."
+															rows={2}
+														/>
+													</div>
+												</>
 											)}
 										</div>
 									) : (
@@ -932,7 +998,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 														</div>
 													)}
 												</>
-											) : (
+											) : letter.templateType === "automotor" ? (
 												<>
 													{policy.manualFields?.premium !== undefined && (
 														<div className="text-green-700 font-medium">✓ Prima Total: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
@@ -953,6 +1019,15 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 															✓ Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
 														</div>
 													)}
+													{policy.manualFields?.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}
+												</>
+											) : (
+												// General Template
+												<>
+													{policy.manualFields?.premium !== undefined && (
+														<div className="text-green-700 font-medium">✓ Prima Total: {formatMonetaryValue(policy.manualFields.premium, policy.manualFields.premiumCurrency)}</div>
+													)}
+													{policy.manualFields?.insuredMatter && <div className="text-green-700 font-medium">✓ Materia Asegurada: {policy.manualFields.insuredMatter}</div>}
 													{policy.manualFields?.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}
 												</>
 											)}

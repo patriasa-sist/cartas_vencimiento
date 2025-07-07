@@ -13,7 +13,7 @@ export interface VehicleForLetter {
 export interface LetterData {
 	id: string;
 	sourceRecordIds: string[];
-	templateType: "salud" | "general";
+	templateType: "salud" | "general" | "automotor";
 	referenceNumber: string;
 	date: string;
 	client: {
@@ -36,17 +36,21 @@ export interface PolicyForLetter {
 	branch: string;
 	insuredMembers?: string[]; // Para pólizas de salud
 	manualFields?: {
-		// Campos para Pólizas Generales (Automotores)
+		// Campos para Pólizas de Automotores
 		vehicles?: VehicleForLetter[];
 		originalVehicles?: VehicleForLetter[];
 		premium?: number;
-		premiumCurrency?: "Bs." | "$us."; // Moneda para la prima total de pólizas generales
+		premiumCurrency?: "Bs." | "$us.";
 
 		// Campos para Pólizas de Salud
 		insuredMembers?: string[];
 		originalInsuredMembers?: string[];
 		renewalPremium?: number;
-		renewalPremiumCurrency?: "Bs." | "$us."; // Moneda para la prima de renovación de salud
+		renewalPremiumCurrency?: "Bs." | "$us.";
+
+		// NUEVO: Campos para Pólizas Generales
+		insuredMatter?: string;
+		originalInsuredMatter?: string;
 
 		// Campos comunes
 		specificConditions?: string;
@@ -72,7 +76,7 @@ export interface GeneratedLetter {
 	clientName: string;
 	clientPhone?: string;
 	clientEmail?: string;
-	templateType: "salud" | "general";
+	templateType: "salud" | "general" | "automotor";
 	fileName: string;
 	pdfBlob?: Blob;
 	policyCount: number;
