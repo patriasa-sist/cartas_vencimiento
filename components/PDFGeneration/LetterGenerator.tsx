@@ -341,7 +341,7 @@ export default function LetterGenerator({ selectedRecords, onClose, onGenerated 
 					const updatedLetter = { ...letter, ...updates };
 					const missingData = detectMissingData(updatedLetter);
 					updatedLetter.missingData = missingData;
-					updatedLetter.needsReview = missingData.length > 0 || updatedLetter.templateType === "general" || updatedLetter.templateType === "automotor";
+					updatedLetter.needsReview = missingData.length > 0;
 					return updatedLetter;
 				}
 				return letter;
