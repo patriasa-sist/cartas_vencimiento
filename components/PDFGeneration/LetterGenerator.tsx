@@ -835,7 +835,7 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 											{policy.manualFields?.premium !== undefined && <div className="text-green-700 font-medium">✓ Prima: {formatCurrency(policy.manualFields.premium)}</div>}
 											{letter.templateType === "salud" && (
 												<>
-													{policy.manualFields.renewalPremium !== undefined && <div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>}
+													{policy.manualFields?.renewalPremium !== undefined && <div className="text-green-700 font-medium">✓ Prima renovación: {formatUSD(policy.manualFields.renewalPremium)}</div>}
 													{policy.insuredMembers && policy.insuredMembers.length > 0 && (
 														<div>
 															<div className="text-green-700 font-medium">✓ Asegurados:</div>
@@ -850,16 +850,16 @@ function LetterCard({ letter, isEditing, isPreviewing, isGenerating, onEdit, onS
 											)}
 											{letter.templateType === "general" && (
 												<>
-													{policy.manualFields.insuredMatter && <div className="text-green-700 font-medium">✓ Materia: {policy.manualFields.insuredMatter}</div>}
-													{policy.manualFields.deductibles !== undefined && (
+													{policy.manualFields?.insuredMatter && <div className="text-green-700 font-medium">✓ Materia: {policy.manualFields.insuredMatter}</div>}
+													{policy.manualFields?.deductibles !== undefined && (
 														<div className="text-green-700 font-medium">✓ Deducibles: {formatMonetaryValue(policy.manualFields.deductibles, policy.manualFields.deductiblesCurrency)}</div>
 													)}
-													{policy.manualFields.territoriality !== undefined && (
+													{policy.manualFields?.territoriality !== undefined && (
 														<div className="text-green-700 font-medium">
 															✓ Extraterritorialidad: {formatMonetaryValue(policy.manualFields.territoriality, policy.manualFields.territorialityCurrency)}
 														</div>
 													)}
-													{policy.manualFields.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}
+													{policy.manualFields?.specificConditions && <div className="text-green-700 font-medium">✓ Condiciones: {policy.manualFields.specificConditions}</div>}
 												</>
 											)}
 										</div>
