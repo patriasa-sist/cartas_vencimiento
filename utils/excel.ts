@@ -216,7 +216,7 @@ export async function processExcelFile(file: File): Promise<ExcelUploadResult> {
 		}
 
 		const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
-		if (!SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES.includes(fileExtension)) {
+		if (!(SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES as readonly string[]).includes(fileExtension)) {
 			return {
 				success: false,
 				errors: [`Tipo de archivo no soportado. Tipos permitidos: ${SYSTEM_CONSTANTS.SUPPORTED_FILE_TYPES.join(", ")}`],
@@ -359,8 +359,8 @@ export function getCriticalRecords(records: ProcessedInsuranceRecord[]): Process
 export function getUniqueValues<T extends keyof ProcessedInsuranceRecord>(records: ProcessedInsuranceRecord[], property: T): string[] {
 	const values = records
 		.map((record) => record[property])
-		.filter((value): value is string => typeof value === "string" && value.trim() !== "" && value !== null && value !== undefined)
-		.map((value) => value.trim());
+		.filter((value) => typeof value === "string" && value.trim() !== "" && value !== null && value !== undefined)
+		.map((value) => (value as string).trim());
 
 	return [...new Set(values)].sort();
 }
