@@ -1,0 +1,7 @@
+{
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.tabSize": 4,
+	"prettier.useTabs": true,
+	"conventionalCommits.scopes": ["upload", "dashboard", "critical-alerts", "export", "login", "email-sent", "bulk-email", "download"]
+}
