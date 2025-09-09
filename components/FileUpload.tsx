@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { processExcelFile } from "@/utils/excel";
-import { ExcelUploadResult, ProcessedInsuranceRecord } from "@/types/insurance";
+import { ExcelUploadResult, ProcessedInsuranceRecord, SYSTEM_CONSTANTS } from "@/types/insurance";
 
 interface FileUploadProps {
 	onDataLoaded: (data: ProcessedInsuranceRecord[]) => void;
@@ -111,7 +111,7 @@ export default function FileUpload({ onDataLoaded, onError, disabled = false }: 
 									<Upload className="h-12 w-12 text-patria-blue" />
 									<div className="text-center">
 										<p className="text-lg font-medium text-gray-700">{isDragActive ? "Suelta el archivo aquí" : "Arrastra tu archivo Excel o haz clic para seleccionar"}</p>
-										<p className="text-sm text-gray-500 mt-2">Archivos soportados: .xlsx, .xls (máx. 10MB)</p>
+										<p className="text-sm text-gray-500 mt-2">Archivos soportados: .xlsx, .xls (máx. ${SYSTEM_CONSTANTS.MAX_UPLOAD_SIZE / 1024 / 1024}MB)</p>
 									</div>
 
 									{!isDragActive && (
